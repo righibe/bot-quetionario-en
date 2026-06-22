@@ -1,6 +1,7 @@
 {
   "name": "english-streak",
   "version": "1.0.0",
+  "packageManager": "yarn@4.11.0",
   "description": "English Streak - A Duolingo-style Discord bot for learning technical English, with daily questions, streaks, leaderboards and automatic milestone roles.",
   "main": "dist/index.js",
   "type": "commonjs",
