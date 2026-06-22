@@ -1,0 +1,79 @@
+// ===========================================================================
+// English Streak - Prisma schema
+// ===========================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// User
+// A Discord user that has interacted with the bot at least once.
+// Only the strictly necessary, non-sensitive data is stored.
+// ---------------------------------------------------------------------------
+model User {
+  id        String @id @default(uuid())
+  discordId String @unique
+  username  String
+
+  points                 Int @default(0)
+  totalCorrectAnswers    Int @default(0)
+  totalQuestionsAnswered Int @default(0)
+
+  currentStreak Int @default(0)
+  bestStreak    Int @default(0)
+
+  // The (UTC, date-only) day the user last fully completed the daily challenge.
+  lastDailyCompleted DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  answers UserAnswer[]
+
+  @@index([points])
+  @@index([currentStreak])
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// DailyQuestion
+// The set of questions selected for a given day. Each day has N rows
+// (one per selected question). "questionId" references the question id inside
+// the static questions JSON file (data/questions.json).
+// ---------------------------------------------------------------------------
+model DailyQuestion {
+  id         String   @id @default(uuid())
+  questionId Int
+  date       DateTime // date-only (UTC midnight) representing the challenge day
+  createdAt  DateTime @default(now())
+
+  @@unique([date, questionId])
+  @@index([date])
+  @@map("daily_questions")
+}
+
+// ---------------------------------------------------------------------------
+// UserAnswer
+// One row per answered question. Used for stats and to prevent answering the
+// same daily question twice.
+// ---------------------------------------------------------------------------
+model UserAnswer {
+  id         String   @id @default(uuid())
+  userId     String
+  questionId Int
+  isCorrect  Boolean
+  answeredAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([questionId])
+  @@index([answeredAt])
+  @@map("user_answers")
+}

@@ -1,0 +1,21 @@
+node_modules
+.env
+dist
+logs
+coverage
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+
+# Prisma
+prisma/*.db
+
+# Misc
+.vscode/
+.idea/
+
+# Local tooling / editor agents
+.claude/

@@ -1,0 +1,45 @@
+import { Prisma, User } from '@prisma/client';
+import { prisma } from '../database';
+
+/**
+ * Data-access layer for the User model. Contains ONLY persistence concerns,
+ * no business rules (those live in the services).
+ */
+export class UserRepository {
+  /** Finds a user by their Discord ID. */
+  findByDiscordId(discordId: string): Promise<User | null> {
+    return prisma.user.findUnique({ where: { discordId } });
+  }
+
+  /**
+   * Returns an existing user or creates a fresh one, keeping the username in
+   * sync. This is the canonical entry point used by command handlers.
+   */
+  async ensureUser(discordId: string, username: string): Promise<User> {
+    return prisma.user.upsert({
+      where: { discordId },
+      update: { username },
+      create: { discordId, username },
+    });
+  }
+
+  /** Applies a partial update to a user. */
+  update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
+    return prisma.user.update({ where: { id }, data });
+  }
+
+  /** Returns the top users ordered by points, then best streak. */
+  findTop(limit: number): Promise<User[]> {
+    return prisma.user.findMany({
+      orderBy: [{ points: 'desc' }, { bestStreak: 'desc' }, { updatedAt: 'asc' }],
+      take: limit,
+    });
+  }
+
+  /** Total number of registered users (for stats / ranking position). */
+  count(): Promise<number> {
+    return prisma.user.count();
+  }
+}
+
+export const userRepository = new UserRepository();
