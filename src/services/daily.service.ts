@@ -1,0 +1,213 @@
+import { User } from '@prisma/client';
+import { Question, isMultipleChoice } from '../interfaces';
+import { AnswerOutcome, DailySession } from '../types';
+import { DAILY_QUESTION_COUNT } from '../constants';
+import { dateKey, toUtcDateOnly, diffInDays } from '../utils/date';
+import { createLogger } from '../utils/logger';
+import {
+  dailyQuestionRepository,
+  userAnswerRepository,
+} from '../repositories';
+import { validateMultipleChoice, validateTextInput } from '../validators';
+import { questionService } from './question.service';
+import { userService, DailyCompletionResult } from './user.service';
+
+const log = createLogger('DailyService');
+
+/** Extends the basic outcome with the final completion payload when finished. */
+export interface SubmitResult extends AnswerOutcome {
+  completion?: DailyCompletionResult;
+}
+
+/**
+ * Orchestrates the per-user daily quiz flow.
+ *
+ * Sessions are held in memory (they only matter for the few seconds a user is
+ * answering). All durable state lives in PostgreSQL. The flow is fully built on
+ * ephemeral interactions / modals — no chat messages are ever read.
+ */
+export class DailyService {
+  private sessions = new Map<string, DailySession>();
+  /** Per-user processing lock to prevent double-submit races. */
+  private locks = new Set<string>();
+
+  /** True if the user already finished today's challenge. */
+  hasCompletedToday(user: User, now: Date = new Date()): boolean {
+    if (!user.lastDailyCompleted) return false;
+    return diffInDays(user.lastDailyCompleted, toUtcDateOnly(now)) === 0;
+  }
+
+  /**
+   * Returns today's question ids, generating and persisting them on the fly if
+   * the cron job has not run yet (e.g. first ever boot of the day).
+   */
+  async getTodayQuestionIds(now: Date = new Date()): Promise<number[]> {
+    const today = toUtcDateOnly(now);
+    let rows = await dailyQuestionRepository.findByDate(today);
+
+    if (rows.length === 0) {
+      const ids = questionService.pickRandomIds(DAILY_QUESTION_COUNT);
+      rows = await dailyQuestionRepository.setForDate(today, ids);
+      log.info(`Generated ${rows.length} daily questions for ${dateKey(today)}.`);
+    }
+
+    return rows.map((r) => r.questionId);
+  }
+
+  /** Resolves today's questions as full objects. */
+  async getTodayQuestions(now: Date = new Date()): Promise<Question[]> {
+    const ids = await this.getTodayQuestionIds(now);
+    return questionService.getManyByIds(ids);
+  }
+
+  /** Whether a live session currently exists for the user. */
+  hasActiveSession(discordId: string): boolean {
+    return this.sessions.has(discordId);
+  }
+
+  getSession(discordId: string): DailySession | undefined {
+    return this.sessions.get(discordId);
+  }
+
+  /** Starts a new in-memory session for the user. */
+  async startSession(
+    user: User,
+    discordId: string,
+    guildId: string | null,
+    now: Date = new Date(),
+  ): Promise<DailySession> {
+    const questions = await this.getTodayQuestions(now);
+
+    const session: DailySession = {
+      userId: user.id,
+      discordId,
+      guildId,
+      dateKey: dateKey(now),
+      questions,
+      currentIndex: 0,
+      correctCount: 0,
+      results: [],
+      startedAt: Date.now(),
+    };
+
+    this.sessions.set(discordId, session);
+    return session;
+  }
+
+  /** The question the user is currently on, or null if finished. */
+  currentQuestion(discordId: string): Question | null {
+    const session = this.sessions.get(discordId);
+    if (!session) return null;
+    return session.questions[session.currentIndex] ?? null;
+  }
+
+  /** Submits a multiple-choice answer for the current question. */
+  submitMultipleChoice(discordId: string, optionIndex: number): Promise<SubmitResult> {
+    return this.submit(discordId, (q) =>
+      isMultipleChoice(q) ? validateMultipleChoice(q, optionIndex) : false,
+    );
+  }
+
+  /** Submits a free-text answer for the current question. */
+  submitText(discordId: string, text: string): Promise<SubmitResult> {
+    return this.submit(discordId, (q) => validateTextInput(q, text));
+  }
+
+  /**
+   * Core submit pipeline shared by both answer types.
+   * Evaluates correctness, advances the cursor and, when the last question is
+   * answered, persists everything (answers + points + streak).
+   */
+  private async submit(
+    discordId: string,
+    evaluate: (q: Question) => boolean,
+  ): Promise<SubmitResult> {
+    if (this.locks.has(discordId)) {
+      throw new Error('A previous answer is still being processed.');
+    }
+
+    const session = this.sessions.get(discordId);
+    if (!session) {
+      throw new Error('No active daily session. Use /daily to start.');
+    }
+
+    const question = session.questions[session.currentIndex];
+    if (!question) {
+      throw new Error('No current question to answer.');
+    }
+
+    this.locks.add(discordId);
+    try {
+      const isCorrect = evaluate(question);
+      session.results.push(isCorrect);
+      if (isCorrect) session.correctCount += 1;
+      session.currentIndex += 1;
+
+      const finished = session.currentIndex >= session.questions.length;
+      const nextQuestion = finished
+        ? null
+        : session.questions[session.currentIndex] ?? null;
+
+      const outcome: SubmitResult = {
+        isCorrect,
+        correctAnswer: question.answer,
+        finished,
+        nextQuestion,
+        questionNumber: session.currentIndex,
+        totalQuestions: session.questions.length,
+      };
+
+      if (finished) {
+        outcome.completion = await this.finalize(session);
+        this.sessions.delete(discordId);
+      }
+
+      return outcome;
+    } finally {
+      this.locks.delete(discordId);
+    }
+  }
+
+  /** Persists answers, points and streak when a session completes. */
+  private async finalize(session: DailySession): Promise<DailyCompletionResult> {
+    const user = await userService.findByDiscordId(session.discordId);
+    if (!user) {
+      throw new Error('User vanished mid-session.');
+    }
+
+    // Defensive: ignore replays if the user somehow already completed today.
+    if (this.hasCompletedToday(user)) {
+      log.warn(`Duplicate completion ignored for ${session.discordId}.`);
+      return {
+        user,
+        pointsEarned: 0,
+        streak: {
+          currentStreak: user.currentStreak,
+          bestStreak: user.bestStreak,
+          isNewBest: false,
+          wasReset: false,
+        },
+      };
+    }
+
+    const rows = session.questions.map((q, i) => ({
+      userId: user.id,
+      questionId: q.id,
+      isCorrect: session.results[i] ?? false,
+    }));
+    await userAnswerRepository.createMany(rows);
+
+    return userService.applyDailyCompletion(
+      user,
+      session.correctCount,
+      session.questions.length,
+    );
+  }
+
+  /** Cancels / clears a user's session (used on errors or restart). */
+  endSession(discordId: string): void {
+    this.sessions.delete(discordId);
+  }
+}
+
+export const dailyService = new DailyService();

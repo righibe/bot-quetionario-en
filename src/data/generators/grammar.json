@@ -1,0 +1,52 @@
+{
+  "subjects": [
+    { "text": "I", "be": "am", "third": false },
+    { "text": "You", "be": "are", "third": false },
+    { "text": "We", "be": "are", "third": false },
+    { "text": "They", "be": "are", "third": false },
+    { "text": "He", "be": "is", "third": true },
+    { "text": "She", "be": "is", "third": true },
+    { "text": "The developer", "be": "is", "third": true },
+    { "text": "The team", "be": "is", "third": true },
+    { "text": "My colleague", "be": "is", "third": true },
+    { "text": "The engineer", "be": "is", "third": true }
+  ],
+  "verbs": [
+    { "base": "work", "third": "works", "rest": "with databases" },
+    { "base": "deploy", "third": "deploys", "rest": "the application every week" },
+    { "base": "write", "third": "writes", "rest": "clean code" },
+    { "base": "review", "third": "reviews", "rest": "the pull requests" },
+    { "base": "manage", "third": "manages", "rest": "the repository" },
+    { "base": "use", "third": "uses", "rest": "Docker every day" },
+    { "base": "fix", "third": "fixes", "rest": "the bugs quickly" },
+    { "base": "test", "third": "tests", "rest": "the new feature" },
+    { "base": "design", "third": "designs", "rest": "the REST API" },
+    { "base": "monitor", "third": "monitors", "rest": "the production servers" },
+    { "base": "configure", "third": "configures", "rest": "the CI pipeline" },
+    { "base": "debug", "third": "debugs", "rest": "the legacy code" },
+    { "base": "refactor", "third": "refactors", "rest": "the old module" },
+    { "base": "maintain", "third": "maintains", "rest": "the back-end services" },
+    { "base": "build", "third": "builds", "rest": "the front-end interface" },
+    { "base": "merge", "third": "merges", "rest": "the feature branch" },
+    { "base": "document", "third": "documents", "rest": "the codebase" },
+    { "base": "optimize", "third": "optimizes", "rest": "the database queries" }
+  ],
+  "articleNouns": [
+    { "noun": "back-end developer", "article": "a" },
+    { "noun": "front-end developer", "article": "a" },
+    { "noun": "software engineer", "article": "a" },
+    { "noun": "full-stack developer", "article": "a" },
+    { "noun": "API", "article": "an" },
+    { "noun": "IDE", "article": "an" },
+    { "noun": "engineer", "article": "an" },
+    { "noun": "architect", "article": "an" },
+    { "noun": "intern", "article": "an" },
+    { "noun": "UX designer", "article": "a" },
+    { "noun": "database administrator", "article": "a" },
+    { "noun": "DevOps engineer", "article": "a" },
+    { "noun": "open-source project", "article": "an" },
+    { "noun": "endpoint", "article": "an" },
+    { "noun": "QA analyst", "article": "a" },
+    { "noun": "hour of downtime", "article": "an" }
+  ]
+}
