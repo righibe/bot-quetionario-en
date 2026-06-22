@@ -12,19 +12,23 @@ WORKDIR /app
 # Prisma engines need these on Alpine.
 RUN apk add --no-cache openssl libc6-compat
 
-# Install dependencies (cached unless lockfile changes).
-COPY package*.json ./
-RUN npm ci
+# Activate the yarn version pinned in package.json (packageManager field).
+RUN corepack enable
+
+# Install dependencies (cached unless manifest/lockfile change).
+# yarn.lock* is optional: it is used when present, generated otherwise.
+COPY package.json yarn.lock* .yarnrc.yml ./
+RUN yarn install
 
 # Generate the Prisma client.
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN yarn prisma generate
 
 # Compile TypeScript and copy static data into dist/.
 COPY tsconfig.json ./
 COPY scripts ./scripts
 COPY src ./src
-RUN npm run build
+RUN yarn build
 
 # --------------------------------------------------------------------------
 # Stage 2: runtime (production-only deps + compiled output)
@@ -37,13 +41,17 @@ ENV NODE_ENV=production
 
 RUN apk add --no-cache openssl libc6-compat
 
-# Production dependencies only.
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN corepack enable
+
+# Production dependencies only (workspace-tools provides `workspaces focus`).
+COPY package.json yarn.lock* .yarnrc.yml ./
+RUN yarn plugin import workspace-tools \
+    && yarn workspaces focus --production \
+    && yarn cache clean
 
 # Prisma schema + generated client.
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN yarn prisma generate
 
 # Compiled application (includes dist/data/questions.json via copy-data).
 COPY --from=builder /app/dist ./dist
