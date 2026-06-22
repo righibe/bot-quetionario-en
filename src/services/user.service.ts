@@ -90,6 +90,15 @@ export class UserService {
   getLeaderboard(limit: number): Promise<User[]> {
     return userRepository.findTop(limit);
   }
+
+  /** The user's 1-based position in the global ranking and the total players. */
+  async getRank(user: User): Promise<{ position: number; total: number }> {
+    const [position, total] = await Promise.all([
+      userRepository.rankByPoints(user.points),
+      userRepository.count(),
+    ]);
+    return { position, total };
+  }
 }
 
 export const userService = new UserService();

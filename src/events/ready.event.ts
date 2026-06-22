@@ -1,6 +1,11 @@
 import { ActivityType, Client, Events } from 'discord.js';
 import { BotEvent } from '../interfaces';
-import { dailyService, rankingService, roleService } from '../services';
+import {
+  dailyPanelService,
+  dailyService,
+  rankingService,
+  roleService,
+} from '../services';
 import { createLogger } from '../utils/logger';
 
 const log = createLogger('Ready');
@@ -19,10 +24,10 @@ export const readyEvent: BotEvent<Events.ClientReady> = {
 
     client.user.setPresence({
       status: 'online',
-      activities: [{ name: '/daily • learn English 🔥', type: ActivityType.Playing }],
+      activities: [{ name: 'learn English daily 🔥', type: ActivityType.Playing }],
     });
 
-    // Ensure today's questions exist so /daily works immediately.
+    // Ensure today's questions exist so the challenge works immediately.
     try {
       await dailyService.getTodayQuestionIds();
     } catch (err) {
@@ -36,6 +41,13 @@ export const readyEvent: BotEvent<Events.ClientReady> = {
       } catch (err) {
         log.warn(`Failed to ensure roles for guild ${guild.id}.`, err);
       }
+    }
+
+    // Publish the permanent daily panel (button to start the challenge).
+    try {
+      await dailyPanelService.updateChannel(client);
+    } catch (err) {
+      log.warn('Failed to publish daily panel.', err);
     }
 
     // Publish the initial ranking.

@@ -33,19 +33,19 @@ export const helpCommand: Command = {
         {
           name: '📋 Commands',
           value: [
-            '`/daily` — Answer today’s 5 questions (private).',
-            '`/profile` — See your points, streak and accuracy.',
-            '`/ranking` — View the global Top 5.',
+            '`/profile` — See your stats and ranking position (private).',
+            '`/ranking` — View the global Top 5 and your position (private).',
             '`/help` — Show this message.',
           ].join('\n'),
         },
         {
           name: '🎯 How it works',
           value: [
-            `• Everyone gets the **same 5 questions** each day.`,
-            `• You can answer **once per day**.`,
+            '• Go to the **daily channel** and press **▶️ Start today’s challenge**.',
+            '• Just **click the correct option** — every question is multiple choice (no typing).',
+            `• Everyone gets the **same 5 questions** each day, **once per day**.`,
             `• Each correct answer = **${POINTS_PER_CORRECT_ANSWER} points** (max **${MAX_DAILY_POINTS}**/day).`,
-            '• Answers are **private** (ephemeral) — no one sees your responses.',
+            '• Everything is **private** (ephemeral) — no one sees your answers.',
           ].join('\n'),
         },
         {
@@ -56,7 +56,7 @@ export const helpCommand: Command = {
           ].join('\n'),
         },
       )
-      .setFooter({ text: 'Start now with /daily 🚀' });
+      .setFooter({ text: 'Start now from the daily channel button 🚀' });
 
     await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   },

@@ -40,6 +40,15 @@ export class UserRepository {
   count(): Promise<number> {
     return prisma.user.count();
   }
+
+  /**
+   * 1-based ranking position by points (how many users have strictly more
+   * points, plus one). Ties share the lower bound, which is fine for display.
+   */
+  async rankByPoints(points: number): Promise<number> {
+    const above = await prisma.user.count({ where: { points: { gt: points } } });
+    return above + 1;
+  }
 }
 
 export const userRepository = new UserRepository();

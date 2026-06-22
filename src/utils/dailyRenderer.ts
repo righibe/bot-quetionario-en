@@ -3,83 +3,45 @@ import {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
 } from 'discord.js';
-import { Question, isMultipleChoice } from '../interfaces';
-import { BRAND_COLOR, CUSTOM_IDS, mcButtonId } from '../constants';
+import { MultipleChoiceQuestion } from '../interfaces';
+import { BRAND_COLOR, mcButtonId } from '../constants';
 import type { SubmitResult } from '../services';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E'];
-
-/** Discord-safe truncation for button labels (max 80 chars). */
-function truncate(text: string, max: number): string {
-  return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
-}
 
 export interface RenderedQuestion {
   embeds: EmbedBuilder[];
   components: ActionRowBuilder<ButtonBuilder>[];
 }
 
-/** Builds the ephemeral message (embed + components) for a single question. */
+/**
+ * Builds the ephemeral message (embed + buttons) for a single question.
+ * Every question reaches this point already normalized to multiple choice, so
+ * the user answers by clicking a lettered button — no modal involved.
+ */
 export function renderQuestion(
-  question: Question,
+  question: MultipleChoiceQuestion,
   index: number,
   total: number,
 ): RenderedQuestion {
   const position = `Question ${index + 1}/${total}`;
   const embed = new EmbedBuilder().setColor(BRAND_COLOR).setTitle(`📝 ${position}`);
 
-  if (isMultipleChoice(question)) {
-    const lines = question.options.map(
-      (opt, i) => `**${LETTERS[i]})** ${opt}`,
+  const lines = question.options.map((opt, i) => `**${LETTERS[i]})** ${opt}`);
+  embed.setDescription(`${question.question}\n\n${lines.join('\n')}`);
+  embed.setFooter({ text: 'Choose the correct option below.' });
+
+  const row = new ActionRowBuilder<ButtonBuilder>();
+  question.options.forEach((_opt, i) => {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(mcButtonId(i))
+        .setLabel(LETTERS[i] ?? String(i + 1))
+        .setStyle(ButtonStyle.Primary),
     );
-    embed.setDescription(`${question.question}\n\n${lines.join('\n')}`);
-    embed.setFooter({ text: 'Choose the correct option below.' });
-
-    const row = new ActionRowBuilder<ButtonBuilder>();
-    question.options.forEach((_opt, i) => {
-      row.addComponents(
-        new ButtonBuilder()
-          .setCustomId(mcButtonId(i))
-          .setLabel(LETTERS[i] ?? String(i + 1))
-          .setStyle(ButtonStyle.Primary),
-      );
-    });
-    return { embeds: [embed], components: [row] };
-  }
-
-  // text_input
-  embed.setDescription(question.question);
-  embed.setFooter({ text: 'Click the button to type your answer.' });
-
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(CUSTOM_IDS.daily.openTextModal)
-      .setLabel('✍️ Type your answer')
-      .setStyle(ButtonStyle.Success),
-  );
+  });
   return { embeds: [embed], components: [row] };
-}
-
-/** Builds the modal used to collect a free-text answer. */
-export function buildTextModal(question: Question): ModalBuilder {
-  const input = new TextInputBuilder()
-    .setCustomId(CUSTOM_IDS.daily.textModalInput)
-    .setLabel(truncate(question.question, 45))
-    .setStyle(TextInputStyle.Short)
-    .setPlaceholder('Type your answer in English…')
-    .setRequired(true)
-    .setMaxLength(300);
-
-  return new ModalBuilder()
-    .setCustomId(CUSTOM_IDS.daily.textModal)
-    .setTitle('Your answer')
-    .addComponents(
-      new ActionRowBuilder<TextInputBuilder>().addComponents(input),
-    );
 }
 
 /** Builds the per-answer feedback embed shown after each submission. */

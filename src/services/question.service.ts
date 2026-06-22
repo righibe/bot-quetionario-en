@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { Question, isMultipleChoice } from '../interfaces';
+import { Question, MultipleChoiceQuestion, isMultipleChoice } from '../interfaces';
 import { createLogger } from '../utils/logger';
 
 const log = createLogger('QuestionService');
@@ -16,6 +16,8 @@ class QuestionService {
   private questions: Question[] = [];
   private byId = new Map<number, Question>();
   private loaded = false;
+  /** Lazily-built pool of distinct text-input answers (used as MC distractors). */
+  private textAnswerPool: string[] | null = null;
 
   /** Candidate locations for questions.json (dev + compiled + override). */
   private candidatePaths(): string[] {
@@ -110,6 +112,59 @@ class QuestionService {
    */
   getOptions(question: Question): string[] {
     return isMultipleChoice(question) ? question.options : [];
+  }
+
+  /**
+   * Returns a button-friendly multiple-choice version of any question.
+   *
+   * Multiple-choice questions are returned unchanged. text_input questions are
+   * converted on the fly into a 4-option multiple choice — the correct answer
+   * plus three distractors drawn from other text answers — so the entire daily
+   * challenge can be answered by clicking buttons, with no Discord modal and no
+   * privileged message-content intent.
+   */
+  toMultipleChoice(question: Question): MultipleChoiceQuestion {
+    this.ensureLoaded();
+    if (isMultipleChoice(question)) return question;
+
+    const distractors = this.pickDistractors(question.answer, 3);
+    const options = this.shuffle([question.answer, ...distractors]);
+
+    return {
+      id: question.id,
+      type: 'multiple_choice',
+      question: question.question,
+      answer: question.answer,
+      options,
+    };
+  }
+
+  /** All distinct canonical answers from text_input questions (lazy, cached). */
+  private getTextAnswerPool(): string[] {
+    if (this.textAnswerPool) return this.textAnswerPool;
+    const set = new Set<string>();
+    for (const q of this.questions) {
+      if (q.type === 'text_input') set.add(q.answer);
+    }
+    this.textAnswerPool = [...set];
+    return this.textAnswerPool;
+  }
+
+  /** Picks `count` distinct distractor answers, never equal to `answer`. */
+  private pickDistractors(answer: string, count: number): string[] {
+    return this.shuffle(this.getTextAnswerPool().filter((a) => a !== answer)).slice(
+      0,
+      count,
+    );
+  }
+
+  private shuffle<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
   }
 
   private ensureLoaded(): void {

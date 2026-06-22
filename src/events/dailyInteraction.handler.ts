@@ -4,14 +4,11 @@ import {
   EmbedBuilder,
   Interaction,
   MessageFlags,
-  ModalSubmitInteraction,
 } from 'discord.js';
 import { CUSTOM_IDS, parseMcButtonId } from '../constants';
-import { dailyService, rankingService, roleService } from '../services';
+import { dailyService, rankingService, roleService, userService } from '../services';
 import type { SubmitResult } from '../services';
-import { isMultipleChoice } from '../interfaces';
 import {
-  buildTextModal,
   renderFeedback,
   renderQuestion,
   renderSummary,
@@ -21,32 +18,26 @@ import { createLogger } from '../utils/logger';
 const log = createLogger('DailyInteraction');
 
 const SESSION_EXPIRED =
-  '⌛ Your daily session expired or was not found. Start again with `/daily`.';
+  '⌛ Your daily session expired or was not found. Press **Start today’s challenge** in the daily channel to begin again.';
+const ALREADY_DONE =
+  '✅ You already completed today’s challenge!\n' +
+  'Come back tomorrow to keep your 🔥 streak alive.';
+const NO_QUESTIONS =
+  '⚠️ No questions are available right now. Please try again later.';
 
-/** True if this interaction belongs to the daily flow (button or modal). */
+/** True if this interaction belongs to the daily flow (a button). */
 export function isDailyComponent(interaction: Interaction): boolean {
-  if (interaction.isButton()) {
-    return (
-      interaction.customId === CUSTOM_IDS.daily.openTextModal ||
-      parseMcButtonId(interaction.customId) !== null
-    );
-  }
-  if (interaction.isModalSubmit()) {
-    return interaction.customId === CUSTOM_IDS.daily.textModal;
-  }
-  return false;
+  if (!interaction.isButton()) return false;
+  return (
+    interaction.customId === CUSTOM_IDS.daily.start ||
+    parseMcButtonId(interaction.customId) !== null
+  );
 }
 
-/** Routes a daily button: either a multiple-choice answer or "open modal". */
+/** Routes a daily button: either the channel-panel "start" or an MC answer. */
 export async function handleDailyButton(interaction: ButtonInteraction): Promise<void> {
-  // Open the free-text modal.
-  if (interaction.customId === CUSTOM_IDS.daily.openTextModal) {
-    const question = dailyService.currentQuestion(interaction.user.id);
-    if (!question) {
-      await interaction.reply({ content: SESSION_EXPIRED, flags: MessageFlags.Ephemeral });
-      return;
-    }
-    await interaction.showModal(buildTextModal(question));
+  if (interaction.customId === CUSTOM_IDS.daily.start) {
+    await startSession(interaction);
     return;
   }
 
@@ -59,30 +50,41 @@ export async function handleDailyButton(interaction: ButtonInteraction): Promise
     await interaction.reply({ content: SESSION_EXPIRED, flags: MessageFlags.Ephemeral });
     return;
   }
-  // Guard against a button click that doesn't match the current question type.
-  if (!isMultipleChoice(current)) {
-    await interaction.reply({
-      content: 'This question expects a typed answer. Use the answer button.',
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
 
   const outcome = await dailyService.submitMultipleChoice(interaction.user.id, optionIndex);
   await advanceAndRespond(interaction, outcome);
 }
 
-/** Handles the submitted free-text modal. */
-export async function handleDailyModal(interaction: ModalSubmitInteraction): Promise<void> {
-  const current = dailyService.currentQuestion(interaction.user.id);
-  if (!current) {
-    await interaction.reply({ content: SESSION_EXPIRED, flags: MessageFlags.Ephemeral });
+/**
+ * Starts a fresh daily run for the user. Triggered by the persistent panel
+ * button in the daily channel; the whole quiz then plays out in this user's
+ * private (ephemeral) message thread.
+ */
+async function startSession(interaction: ButtonInteraction): Promise<void> {
+  const discordId = interaction.user.id;
+  const user = await userService.ensureUser(discordId, interaction.user.username);
+
+  if (dailyService.hasCompletedToday(user)) {
+    await interaction.reply({ content: ALREADY_DONE, flags: MessageFlags.Ephemeral });
     return;
   }
 
-  const value = interaction.fields.getTextInputValue(CUSTOM_IDS.daily.textModalInput);
-  const outcome = await dailyService.submitText(interaction.user.id, value);
-  await advanceAndRespond(interaction, outcome);
+  // Reset any stale in-memory session and start fresh.
+  dailyService.endSession(discordId);
+  const session = await dailyService.startSession(user, discordId, interaction.guildId);
+
+  if (session.questions.length === 0) {
+    await interaction.reply({ content: NO_QUESTIONS, flags: MessageFlags.Ephemeral });
+    log.error('Daily session started with zero questions.');
+    return;
+  }
+
+  const view = renderQuestion(session.questions[0], 0, session.questions.length);
+  await interaction.reply({
+    embeds: view.embeds,
+    components: view.components,
+    flags: MessageFlags.Ephemeral,
+  });
 }
 
 /**
@@ -90,7 +92,7 @@ export async function handleDailyModal(interaction: ModalSubmitInteraction): Pro
  * question or the final summary, then runs post-completion side effects.
  */
 async function advanceAndRespond(
-  interaction: ButtonInteraction | ModalSubmitInteraction,
+  interaction: ButtonInteraction,
   outcome: SubmitResult,
 ): Promise<void> {
   const feedback = renderFeedback(outcome);
@@ -117,27 +119,18 @@ async function advanceAndRespond(
   }
 }
 
-/** Unified message update for button & modal interactions. */
+/** Edits the user's ephemeral message in place with the new embeds/buttons. */
 async function updateMessage(
-  interaction: ButtonInteraction | ModalSubmitInteraction,
+  interaction: ButtonInteraction,
   embeds: EmbedBuilder[],
   components: ReturnType<typeof renderQuestion>['components'],
 ): Promise<void> {
-  if (interaction.isButton()) {
-    await interaction.update({ embeds, components });
-    return;
-  }
-  // Modal submitted from a message component supports update().
-  if (interaction.isFromMessage()) {
-    await interaction.update({ embeds, components });
-  } else {
-    await interaction.reply({ embeds, flags: MessageFlags.Ephemeral });
-  }
+  await interaction.update({ embeds, components });
 }
 
 /** Grants milestone roles and refreshes the ranking channel after completion. */
 async function runCompletionSideEffects(
-  interaction: ButtonInteraction | ModalSubmitInteraction,
+  interaction: ButtonInteraction,
   outcome: SubmitResult,
 ): Promise<void> {
   const completion = outcome.completion;

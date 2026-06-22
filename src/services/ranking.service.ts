@@ -33,7 +33,9 @@ export class RankingService {
       .setTimestamp(new Date());
 
     if (top.length === 0) {
-      embed.setDescription('No one has played yet. Be the first with `/daily`! 🚀');
+      embed.setDescription(
+        'No one has played yet. Be the first — start the challenge in the daily channel! 🚀',
+      );
       return embed;
     }
 

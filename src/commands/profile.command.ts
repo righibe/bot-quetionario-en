@@ -22,12 +22,16 @@ export const profileCommand: Command = {
       interaction.user.username,
     );
     const stats = userService.buildProfile(user);
+    const { position, total } = await userService.getRank(user);
+    const rankValue =
+      stats.points > 0 ? `#${position} of ${total}` : 'Unranked';
 
     const embed = new EmbedBuilder()
       .setColor(BRAND_COLOR)
       .setTitle(`📊 Profile — ${stats.username}`)
       .setThumbnail(interaction.user.displayAvatarURL())
       .addFields(
+        { name: '📍 Ranking', value: rankValue, inline: true },
         { name: '🏅 Points', value: `${stats.points}`, inline: true },
         { name: '🔥 Current streak', value: `${stats.currentStreak} day(s)`, inline: true },
         { name: '🏆 Best streak', value: `${stats.bestStreak} day(s)`, inline: true },

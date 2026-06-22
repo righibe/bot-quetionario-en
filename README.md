@@ -13,15 +13,15 @@ limite de verificação do Discord sem justificativas complexas.
 
 ## ✨ Funcionalidades
 
-- **`/daily`** — 5 perguntas por dia, iguais para todos, respondíveis **uma vez por dia**.
-- **Respostas privadas** — tudo acontece através de mensagens **efêmeras**, botões e modais. Ninguém vê as suas respostas.
+- **Desafio diário por botão** — no canal de perguntas há uma **mensagem fixa** com o botão **▶️ Start today’s challenge**. Não existe comando `/daily`: a pessoa clica no botão e responde no privado.
+- **Só botões, sem modal** — todas as perguntas (inclusive as traduções) são apresentadas como **múltipla escolha**; basta clicar na opção certa. Não é preciso o intent privilegiado `MessageContent`.
+- **Respostas privadas** — tudo acontece através de mensagens **efêmeras**. Ninguém vê as suas respostas.
 - **Pontos** — 20 pontos por resposta correta (máximo de **100/dia**).
 - **Streaks** — dias consecutivos formam uma sequência 🔥; se faltar um dia, ela reseta.
 - **Cargos de marco automáticos** — em 10, 20, 30, 60, 100, 300, 600 e 1000 dias. O bot **cria os cargos sozinho** (cor laranja), sem IDs fixos no código.
-- **Ranking global Top 5** — por comando e atualizado automaticamente em um canal dedicado.
-- **~1000 perguntas de inglês técnico** (múltipla escolha + digitação), geradas a partir de datasets fáceis de manter.
-- **Respostas de texto tolerantes** — ignora maiúsculas/minúsculas, espaços extras, pontuação no final e acentos.
-- **Job diário (cron)** — troca as perguntas à meia-noite e atualiza o ranking.
+- **Ranking global Top 5** — uma única **mensagem permanente** no canal de ranking, atualizada automaticamente. `/ranking` e `/profile` mostram a sua posição em resposta **efêmera** (não poluem o canal).
+- **~1000 perguntas de inglês técnico**, geradas a partir de datasets fáceis de manter.
+- **Job diário (cron)** — troca as perguntas à meia-noite e atualiza o ranking e o painel diário.
 
 ---
 
@@ -35,7 +35,7 @@ Node.js · TypeScript · discord.js v14 · PostgreSQL · Prisma ORM · node-cron
 
 ```
 src/
-├── commands/      # Slash commands (/daily, /profile, /ranking, /help)
+├── commands/      # Slash commands (/profile, /ranking, /help)
 ├── config/        # Validação de env + intents do gateway
 ├── constants/     # Canais, regras do jogo, custom ids
 ├── data/          # questions.json + datasets do gerador
@@ -97,8 +97,8 @@ Copie `.env.example` para `.env`. **Você pode colar o mesmo arquivo direto na V
 | Variável | Obrigatória | Descrição |
 | --- | --- | --- |
 | `DISCORD_TOKEN` | ✅ | Token do bot (Developer Portal → Bot → Token). O Client ID é detectado automaticamente a partir dele. |
-| `CHANNEL_DAILY_QUESTIONS` | — | ID do canal para o aviso de "novo desafio". |
-| `CHANNEL_RANKING` | — | ID do canal onde o Top 5 ao vivo é publicado. |
+| `CHANNEL_DAILY_QUESTIONS` | — | ID do canal onde fica a mensagem fixa com o botão de iniciar o desafio. |
+| `CHANNEL_RANKING` | — | ID do canal onde a mensagem permanente do Top 5 é publicada. |
 | `POSTGRES_USER` | ✅ | Usuário do banco. |
 | `POSTGRES_PASSWORD` | ✅ | Senha do banco. |
 | `POSTGRES_DB` | ✅ | Nome do banco. |
@@ -125,6 +125,13 @@ Copie `.env.example` para `.env`. **Você pode colar o mesmo arquivo direto na V
 Defina-os no `.env` (`CHANNEL_DAILY_QUESTIONS`, `CHANNEL_RANKING`) **ou** edite
 `src/constants/channels.ts`. Para copiar um ID, ative o *Modo Desenvolvedor* no
 Discord, clique com o botão direito no canal → **Copiar ID do Canal**.
+
+> 💡 **Mantenha os dois canais "só do bot".** Como o bot mantém uma única
+> mensagem permanente em cada um (o painel do desafio e o Top 5), configure as
+> permissões do canal para **negar "Enviar Mensagens" ao `@everyone`** e permitir
+> apenas ao cargo do bot. Assim o canal nunca é poluído — a interação dos usuários
+> acontece pelo botão e pelos comandos efêmeros (`/ranking`, `/profile`), que
+> ninguém mais vê.
 
 ---
 
