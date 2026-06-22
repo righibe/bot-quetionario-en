@@ -25,7 +25,7 @@ COPY prisma ./prisma
 RUN yarn prisma generate
 
 # Compile TypeScript and copy static data into dist/.
-COPY tsconfig.json ./
+COPY tsconfig*.json ./
 COPY scripts ./scripts
 COPY src ./src
 RUN yarn build
@@ -43,10 +43,9 @@ RUN apk add --no-cache openssl libc6-compat
 
 RUN corepack enable
 
-# Production dependencies only (workspace-tools provides `workspaces focus`).
+# Production dependencies only. `workspaces focus` ships built-in with yarn 4.
 COPY package.json yarn.lock* .yarnrc.yml ./
-RUN yarn plugin import workspace-tools \
-    && yarn workspaces focus --production \
+RUN yarn workspaces focus --production \
     && yarn cache clean
 
 # Prisma schema + generated client.
