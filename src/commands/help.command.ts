@@ -33,9 +33,9 @@ export const helpCommand: Command = {
         {
           name: '📋 Commands',
           value: [
-            '`/profile` — See your stats and ranking position (private).',
-            '`/ranking` — View the global Top 5 and your position (private).',
+            '`/profile_duolingo` — See your stats and ranking position (private).',
             '`/help` — Show this message.',
+            '_The global Top 5 lives as a permanent message in the ranking channel._',
           ].join('\n'),
         },
         {

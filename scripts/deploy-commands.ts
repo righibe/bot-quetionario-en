@@ -5,8 +5,8 @@ import { logger } from '../src/utils/logger';
  * Standalone slash-command deployment script.
  * Usage: npm run deploy:commands
  *
- * Registers guild commands instantly when DISCORD_GUILD_ID is set, otherwise
- * registers global commands.
+ * Registers guild commands instantly: to DISCORD_GUILD_ID when set, otherwise
+ * to every guild the bot is in. Commands are never registered globally.
  */
 async function main(): Promise<void> {
   await registerCommands();

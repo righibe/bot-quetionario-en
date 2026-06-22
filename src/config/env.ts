@@ -47,8 +47,9 @@ export const env = {
   discord: {
     token: required('DISCORD_TOKEN'),
     /**
-     * Optional guild id for instant (guild-scoped) command registration during
-     * development. Not part of .env.example; leave unset to register globally.
+     * Optional guild id. When set, slash commands are registered to this single
+     * server only. When unset, they are registered to every server the bot is
+     * in. Either way commands are guild-scoped (instant) and never global.
      */
     guildId: optional('DISCORD_GUILD_ID'),
   },

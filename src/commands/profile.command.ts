@@ -9,12 +9,13 @@ import { userService } from '../services';
 import { BRAND_COLOR } from '../constants';
 
 /**
- * /profile — shows the caller's personal stats (ephemeral, private).
+ * /profile_duolingo — shows the caller's personal stats and ranking position
+ * (ephemeral, private).
  */
 export const profileCommand: Command = {
   data: new SlashCommandBuilder()
-    .setName('profile')
-    .setDescription('View your English Streak stats.'),
+    .setName('profile_duolingo')
+    .setDescription('View your English Streak stats and ranking position.'),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const user = await userService.ensureUser(
