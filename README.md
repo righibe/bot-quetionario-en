@@ -135,16 +135,16 @@ O schema fica em `prisma/schema.prisma` (modelos: `User`, `DailyQuestion`,
 
 ```bash
 # Gerar o client Prisma
-npm run prisma:generate
+yarn prisma:generate
 
 # Criar + aplicar uma migration em desenvolvimento
-npm run prisma:migrate:dev -- --name init
+yarn prisma:migrate:dev --name init
 
 # Aplicar migrations existentes em produção
-npm run prisma:migrate
+yarn prisma:migrate
 
 # Abrir o Prisma Studio (interface gráfica do banco)
-npm run prisma:studio
+yarn prisma:studio
 ```
 
 Dentro do Docker o schema é aplicado automaticamente pelo entrypoint. Para criar
@@ -152,7 +152,7 @@ uma **migration versionada** (recomendado antes de ir para produção), rode uma
 vez localmente contra o seu banco:
 
 ```bash
-npx prisma migrate dev --name init
+yarn prisma migrate dev --name init
 ```
 
 e commite a pasta `prisma/migrations/` gerada.
@@ -170,7 +170,7 @@ Para expandir ou regerar o banco:
 ```bash
 # 1. Edite qualquer arquivo em src/data/generators/
 # 2. Regere o questions.json (determinístico)
-npm run generate:questions
+yarn generate:questions
 ```
 
 Formatos de pergunta:
@@ -194,31 +194,33 @@ maiúsculas/minúsculas, remove espaços extras, ignora pontuação no final e a
 
 ## 💻 Desenvolvimento local (sem Docker)
 
-Requer **Node.js 20+** e um **PostgreSQL** rodando.
+Requer **Node.js 20+** e um **PostgreSQL** rodando. O projeto usa **yarn 4**
+(fixado em `package.json`); ative-o com `corepack enable` (o corepack já vem com
+o Node 20+).
 
 ```bash
-npm install
+yarn install
 cp .env.example .env          # defina as POSTGRES_* locais (host = localhost) e,
                               # para o Prisma CLI, descomente DATABASE_URL
 
-npm run prisma:generate
-npm run prisma:migrate:dev -- --name init
-npm run generate:questions    # (já vem pronto, rode para atualizar)
-npm run db:seed               # opcional: define as perguntas de hoje
+yarn prisma:generate
+yarn prisma:migrate:dev --name init
+yarn generate:questions       # (já vem pronto, rode para atualizar)
+yarn db:seed                  # opcional: define as perguntas de hoje
 
 # Registrar os slash commands
 # (opcional: export DISCORD_GUILD_ID=<id do servidor> para atualização instantânea por servidor)
-npm run deploy:commands
+yarn deploy:commands
 
 # Rodar em modo watch
-npm run dev
+yarn dev
 ```
 
 Buildar e rodar a saída compilada:
 
 ```bash
-npm run build
-npm start
+yarn build
+yarn start
 ```
 
 ---
@@ -258,7 +260,7 @@ docker compose logs -f bot
 
 Os slash commands são re-registrados automaticamente na inicialização. As
 mudanças de schema são aplicadas pelo entrypoint (ou rode
-`docker compose run --rm bot npx prisma migrate deploy`).
+`docker compose run --rm bot yarn prisma migrate deploy`).
 
 ---
 
@@ -304,16 +306,16 @@ reinícios e rebuilds.
 
 | Script | Descrição |
 | --- | --- |
-| `npm run dev` | Roda com hot reload (ts-node-dev). |
-| `npm run build` | Compila o TypeScript + copia os dados para `dist/`. |
-| `npm start` | Roda o bot compilado. |
-| `npm run generate:questions` | Regera o `questions.json` a partir dos datasets. |
-| `npm run deploy:commands` | Registra os slash commands no Discord. |
-| `npm run db:seed` | Popula as perguntas do dia. |
-| `npm run prisma:generate` | Gera o client Prisma. |
-| `npm run prisma:migrate` | Aplica migrations (produção). |
-| `npm run prisma:migrate:dev` | Cria & aplica uma migration (dev). |
-| `npm run prisma:studio` | Abre o Prisma Studio. |
+| `yarn dev` | Roda com hot reload (ts-node-dev). |
+| `yarn build` | Compila o TypeScript + copia os dados para `dist/`. |
+| `yarn start` | Roda o bot compilado. |
+| `yarn generate:questions` | Regera o `questions.json` a partir dos datasets. |
+| `yarn deploy:commands` | Registra os slash commands no Discord. |
+| `yarn db:seed` | Popula as perguntas do dia. |
+| `yarn prisma:generate` | Gera o client Prisma. |
+| `yarn prisma:migrate` | Aplica migrations (produção). |
+| `yarn prisma:migrate:dev` | Cria & aplica uma migration (dev). |
+| `yarn prisma:studio` | Abre o Prisma Studio. |
 
 ---
 
