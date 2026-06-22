@@ -1,20 +1,15 @@
 /**
- * Stable custom-id prefixes for interactive components (buttons / modals).
+ * Stable custom-id prefixes for interactive components (buttons).
  *
  * Format conventions:
  *   daily:mc:<optionIndex>   -> a multiple-choice answer button
- *   daily:text               -> button that opens the text-input modal
- *   daily:modal              -> the submitted text-input modal
- *   daily:start              -> button to (re)start the daily flow
+ *   daily:start              -> button on the channel panel that starts a run
  *
  * Keeping these centralized avoids "magic strings" scattered across handlers.
  */
 export const CUSTOM_IDS = {
   daily: {
     multipleChoicePrefix: 'daily:mc:',
-    openTextModal: 'daily:text',
-    textModal: 'daily:modal',
-    textModalInput: 'daily:modal:input',
     start: 'daily:start',
   },
 } as const;

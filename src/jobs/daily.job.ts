@@ -1,9 +1,9 @@
 import cron, { ScheduledTask } from 'node-cron';
-import { Client, EmbedBuilder, TextChannel } from 'discord.js';
+import { Client } from 'discord.js';
 import { env } from '../config';
-import { BRAND_COLOR, CHANNELS, DAILY_QUESTION_COUNT } from '../constants';
+import { DAILY_QUESTION_COUNT } from '../constants';
 import { dailyQuestionRepository } from '../repositories';
-import { questionService, rankingService } from '../services';
+import { dailyPanelService, questionService, rankingService } from '../services';
 import { toUtcDateOnly, dateKey } from '../utils/date';
 import { createLogger } from '../utils/logger';
 
@@ -15,7 +15,7 @@ const log = createLogger('DailyJob');
  *   2. persists them in DailyQuestion (which implicitly resets availability,
  *      since "completed today" is computed from the UTC date);
  *   3. refreshes the ranking;
- *   4. announces the new challenge in the daily-questions channel.
+ *   4. refreshes the permanent panel in the daily-questions channel.
  */
 export class DailyJob {
   private task: ScheduledTask | null = null;
@@ -63,30 +63,10 @@ export class DailyJob {
       log.error('Failed to refresh ranking during rollover.', err);
     }
 
-    await this.announce(client);
-  }
-
-  /** Posts a non-intrusive announcement in the daily-questions channel. */
-  private async announce(client: Client): Promise<void> {
-    const channelId = CHANNELS.dailyQuestions;
-    if (!channelId) return;
-
     try {
-      const channel = await client.channels.fetch(channelId);
-      if (!channel || !channel.isTextBased() || channel.isDMBased()) return;
-
-      const embed = new EmbedBuilder()
-        .setColor(BRAND_COLOR)
-        .setTitle('🔥 New daily challenge available!')
-        .setDescription(
-          'A fresh set of 5 questions is ready.\n' +
-            'Use `/daily` to answer and keep your streak alive! 🚀',
-        )
-        .setTimestamp(new Date());
-
-      await (channel as TextChannel).send({ embeds: [embed] });
+      await dailyPanelService.updateChannel(client);
     } catch (err) {
-      log.warn('Failed to announce new daily challenge.', err);
+      log.error('Failed to refresh daily panel during rollover.', err);
     }
   }
 }

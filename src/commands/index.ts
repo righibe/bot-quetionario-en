@@ -1,12 +1,15 @@
 import { Command } from '../interfaces';
-import { dailyCommand } from './daily.command';
 import { profileCommand } from './profile.command';
 import { rankingCommand } from './ranking.command';
 import { helpCommand } from './help.command';
 
-/** Ordered registry of every slash command in the bot. */
+/**
+ * Ordered registry of every slash command in the bot.
+ *
+ * Note: there is no `/daily` command. The daily challenge starts from the
+ * button on the permanent panel in the daily-questions channel.
+ */
 export const commands: Command[] = [
-  dailyCommand,
   profileCommand,
   rankingCommand,
   helpCommand,

@@ -1,5 +1,5 @@
 import { User } from '@prisma/client';
-import { Question, isMultipleChoice } from '../interfaces';
+import { Question, MultipleChoiceQuestion, isMultipleChoice } from '../interfaces';
 import { AnswerOutcome, DailySession } from '../types';
 import { DAILY_QUESTION_COUNT } from '../constants';
 import { dateKey, toUtcDateOnly, diffInDays } from '../utils/date';
@@ -8,7 +8,7 @@ import {
   dailyQuestionRepository,
   userAnswerRepository,
 } from '../repositories';
-import { validateMultipleChoice, validateTextInput } from '../validators';
+import { validateMultipleChoice } from '../validators';
 import { questionService } from './question.service';
 import { userService, DailyCompletionResult } from './user.service';
 
@@ -24,7 +24,9 @@ export interface SubmitResult extends AnswerOutcome {
  *
  * Sessions are held in memory (they only matter for the few seconds a user is
  * answering). All durable state lives in PostgreSQL. The flow is fully built on
- * ephemeral interactions / modals — no chat messages are ever read.
+ * ephemeral interactions and buttons — every question (including translations)
+ * is normalized into multiple choice, so no Discord modal is ever shown and no
+ * chat messages are ever read.
  */
 export class DailyService {
   private sessions = new Map<string, DailySession>();
@@ -76,7 +78,10 @@ export class DailyService {
     guildId: string | null,
     now: Date = new Date(),
   ): Promise<DailySession> {
-    const questions = await this.getTodayQuestions(now);
+    // Normalize every question into a button-answerable multiple choice so the
+    // whole run never needs a modal.
+    const raw = await this.getTodayQuestions(now);
+    const questions = raw.map((q) => questionService.toMultipleChoice(q));
 
     const session: DailySession = {
       userId: user.id,
@@ -95,7 +100,7 @@ export class DailyService {
   }
 
   /** The question the user is currently on, or null if finished. */
-  currentQuestion(discordId: string): Question | null {
+  currentQuestion(discordId: string): MultipleChoiceQuestion | null {
     const session = this.sessions.get(discordId);
     if (!session) return null;
     return session.questions[session.currentIndex] ?? null;
@@ -106,11 +111,6 @@ export class DailyService {
     return this.submit(discordId, (q) =>
       isMultipleChoice(q) ? validateMultipleChoice(q, optionIndex) : false,
     );
-  }
-
-  /** Submits a free-text answer for the current question. */
-  submitText(discordId: string, text: string): Promise<SubmitResult> {
-    return this.submit(discordId, (q) => validateTextInput(q, text));
   }
 
   /**
@@ -128,7 +128,7 @@ export class DailyService {
 
     const session = this.sessions.get(discordId);
     if (!session) {
-      throw new Error('No active daily session. Use /daily to start.');
+      throw new Error('No active daily session.');
     }
 
     const question = session.questions[session.currentIndex];

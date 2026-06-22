@@ -4,7 +4,6 @@ import { commandMap } from '../commands';
 import { withErrorBoundary } from '../middlewares';
 import {
   handleDailyButton,
-  handleDailyModal,
   isDailyComponent,
 } from './dailyInteraction.handler';
 import { createLogger } from '../utils/logger';
@@ -32,18 +31,10 @@ export const interactionCreateEvent: BotEvent<Events.InteractionCreate> = {
       return;
     }
 
-    // ---- Buttons (daily flow) ----
+    // ---- Buttons (daily flow: panel "start" + answer buttons) ----
     if (interaction.isButton() && isDailyComponent(interaction)) {
       await withErrorBoundary(interaction, 'button:daily', () =>
         handleDailyButton(interaction),
-      );
-      return;
-    }
-
-    // ---- Modals (daily free-text flow) ----
-    if (interaction.isModalSubmit() && isDailyComponent(interaction)) {
-      await withErrorBoundary(interaction, 'modal:daily', () =>
-        handleDailyModal(interaction),
       );
       return;
     }

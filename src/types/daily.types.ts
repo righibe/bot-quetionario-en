@@ -1,13 +1,17 @@
-import { Question } from '../interfaces';
+import { MultipleChoiceQuestion } from '../interfaces';
 
-/** The in-memory state of a single user's daily run. */
+/**
+ * The in-memory state of a single user's daily run. Questions are stored as
+ * multiple choice because every question (including translations) is normalized
+ * to MC when the session starts, so the whole flow is button-only.
+ */
 export interface DailySession {
   userId: string;
   discordId: string;
   guildId: string | null;
   /** UTC date-only key, e.g. 2026-06-21. */
   dateKey: string;
-  questions: Question[];
+  questions: MultipleChoiceQuestion[];
   currentIndex: number;
   correctCount: number;
   /** Per-question correctness, in order. */
@@ -20,7 +24,7 @@ export interface AnswerOutcome {
   isCorrect: boolean;
   correctAnswer: string;
   finished: boolean;
-  nextQuestion: Question | null;
+  nextQuestion: MultipleChoiceQuestion | null;
   questionNumber: number;
   totalQuestions: number;
 }
