@@ -19,7 +19,8 @@ limite de verificação do Discord sem justificativas complexas.
 - **Pontos** — 20 pontos por resposta correta (máximo de **100/dia**).
 - **Streaks** — dias consecutivos formam uma sequência 🔥; se faltar um dia, ela reseta.
 - **Cargos de marco automáticos** — em 10, 20, 30, 60, 100, 300, 600 e 1000 dias. O bot **cria os cargos sozinho** (cor laranja), sem IDs fixos no código.
-- **Ranking global Top 5** — uma única **mensagem permanente** no canal de ranking, atualizada automaticamente. `/ranking` e `/profile` mostram a sua posição em resposta **efêmera** (não poluem o canal).
+- **Ranking global Top 5** — uma única **mensagem permanente** no canal de ranking, atualizada automaticamente. `/profile_duolingo` mostra os seus stats e a sua posição em resposta **efêmera** (não polui o canal).
+- **Comandos por servidor (nunca globais)** — os slash commands são registrados na guild (instantâneo). Para usar em outro servidor, defina `DISCORD_GUILD_ID` com o ID dele.
 - **~1000 perguntas de inglês técnico**, geradas a partir de datasets fáceis de manter.
 - **Job diário (cron)** — troca as perguntas à meia-noite e atualiza o ranking e o painel diário.
 
@@ -35,7 +36,7 @@ Node.js · TypeScript · discord.js v14 · PostgreSQL · Prisma ORM · node-cron
 
 ```
 src/
-├── commands/      # Slash commands (/profile, /ranking, /help)
+├── commands/      # Slash commands (/profile_duolingo, /help)
 ├── config/        # Validação de env + intents do gateway
 ├── constants/     # Canais, regras do jogo, custom ids
 ├── data/          # questions.json + datasets do gerador
@@ -97,6 +98,7 @@ Copie `.env.example` para `.env`. **Você pode colar o mesmo arquivo direto na V
 | Variável | Obrigatória | Descrição |
 | --- | --- | --- |
 | `DISCORD_TOKEN` | ✅ | Token do bot (Developer Portal → Bot → Token). O Client ID é detectado automaticamente a partir dele. |
+| `DISCORD_GUILD_ID` | — | ID do servidor onde registrar os comandos. Os comandos são **sempre por servidor (nunca globais)**, então aparecem na hora. Defina para registrar só no **seu** servidor; se deixar em branco, o bot registra em **todos** os servidores em que estiver. |
 | `CHANNEL_DAILY_QUESTIONS` | — | ID do canal onde fica a mensagem fixa com o botão de iniciar o desafio. |
 | `CHANNEL_RANKING` | — | ID do canal onde a mensagem permanente do Top 5 é publicada. |
 | `POSTGRES_USER` | ✅ | Usuário do banco. |
@@ -130,7 +132,7 @@ Discord, clique com o botão direito no canal → **Copiar ID do Canal**.
 > mensagem permanente em cada um (o painel do desafio e o Top 5), configure as
 > permissões do canal para **negar "Enviar Mensagens" ao `@everyone`** e permitir
 > apenas ao cargo do bot. Assim o canal nunca é poluído — a interação dos usuários
-> acontece pelo botão e pelos comandos efêmeros (`/ranking`, `/profile`), que
+> acontece pelo botão e pelo comando efêmero (`/profile_duolingo`), que
 > ninguém mais vê.
 
 ---
@@ -215,8 +217,8 @@ yarn prisma:migrate:dev --name init
 yarn generate:questions       # (já vem pronto, rode para atualizar)
 yarn db:seed                  # opcional: define as perguntas de hoje
 
-# Registrar os slash commands
-# (opcional: export DISCORD_GUILD_ID=<id do servidor> para atualização instantânea por servidor)
+# Registrar os slash commands (já roda automaticamente no boot do bot).
+# Use DISCORD_GUILD_ID no .env para registrar só no seu servidor (recomendado).
 yarn deploy:commands
 
 # Rodar em modo watch

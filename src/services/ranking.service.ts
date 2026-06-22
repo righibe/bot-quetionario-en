@@ -15,20 +15,15 @@ const log = createLogger('RankingService');
 const RANKING_FOOTER_TAG = 'English Streak • Global Ranking';
 
 /**
- * Builds and maintains the global Top-5 leaderboard, both on demand (/ranking)
- * and automatically (cron / after completions).
+ * Builds and maintains the global Top-5 leaderboard as a single permanent
+ * message in the ranking channel (refreshed on cron and after completions).
  */
 export class RankingService {
   /** Cached id of the auto-updated ranking message, to avoid re-scanning. */
   private rankingMessageId: string | null = null;
 
-  /**
-   * Builds the leaderboard embed from the current top users.
-   * @param includeUsage append the "how to use this channel" field (for the
-   *   permanent channel message; omitted in the /ranking reply that already
-   *   shows the caller's position).
-   */
-  async buildEmbed(includeUsage = true): Promise<EmbedBuilder> {
+  /** Builds the leaderboard embed (Top 5 + how-to-use) from the current top users. */
+  async buildEmbed(): Promise<EmbedBuilder> {
     const top = await userService.getLeaderboard(RANKING_SIZE);
 
     const embed = new EmbedBuilder()
@@ -41,14 +36,14 @@ export class RankingService {
       embed.setDescription(
         'No one has played yet. Be the first — start the challenge in the daily channel! 🚀',
       );
-      if (includeUsage) this.addUsageField(embed);
+      this.addUsageField(embed);
       return embed;
     }
 
     embed.setDescription(
       top.map((user, i) => this.formatRow(user, i)).join('\n\n'),
     );
-    if (includeUsage) this.addUsageField(embed);
+    this.addUsageField(embed);
     return embed;
   }
 
@@ -57,9 +52,9 @@ export class RankingService {
     embed.addFields({
       name: 'ℹ️ How to use this channel',
       value: [
-        '• `/ranking` — see this Top 5 **and your own position**',
-        '• `/profile` — your full stats (points, streak, accuracy)',
-        '_Both replies are private, so this channel stays clean._',
+        'This Top 5 updates automatically.',
+        '• `/profile_duolingo` — see your full stats **and your position** (private)',
+        '_The reply is private, so this channel stays clean._',
       ].join('\n'),
     });
   }
