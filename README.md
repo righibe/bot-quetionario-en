@@ -1,54 +1,55 @@
 # 🔥 English Streak
 
-A **Duolingo-style Discord bot** for learning **technical English** for software
-development. Users answer **5 daily questions**, earn points, keep a daily
-**streak**, climb a **global leaderboard**, and automatically receive **🔥 milestone roles**.
+Um **bot de Discord no estilo Duolingo** para aprender **inglês técnico** voltado
+ao desenvolvimento de software. Os usuários respondem **5 perguntas diárias**,
+ganham pontos, mantêm uma **sequência (streak)** diária, disputam um **ranking
+global** e recebem automaticamente **cargos de marco 🔥**.
 
-Built to be **privileged-intent free** (no `MESSAGE_CONTENT`, no `PRESENCE`, no
-continuous member monitoring) so it scales past Discord's verification gate
-without complex justifications.
-
----
-
-## ✨ Features
-
-- **`/daily`** — 5 questions per day, the same for everyone, answerable **once per day**.
-- **Private answers** — everything happens through **ephemeral** messages, buttons and modals. No one ever sees your answers.
-- **Points** — 20 points per correct answer (max **100/day**).
-- **Streaks** — consecutive days build a 🔥 streak; miss a day and it resets.
-- **Automatic milestone roles** — at 10, 20, 30, 60, 100, 300, 600 and 1000 days. The bot **creates the roles itself** (orange), no hard-coded IDs.
-- **Global Top 5 ranking** — by command and auto-updated in a dedicated channel.
-- **~1000 technical-English questions** (multiple choice + text input), generated from maintainable datasets.
-- **Lenient text answers** — case, extra spaces, trailing punctuation and accents are ignored.
-- **Daily cron job** — rotates the questions at midnight and refreshes the ranking.
+Construído para ser **livre de intents privilegiadas** (sem `MESSAGE_CONTENT`,
+sem `PRESENCE`, sem monitoramento contínuo de membros), então escala além do
+limite de verificação do Discord sem justificativas complexas.
 
 ---
 
-## 🧱 Tech stack
+## ✨ Funcionalidades
+
+- **`/daily`** — 5 perguntas por dia, iguais para todos, respondíveis **uma vez por dia**.
+- **Respostas privadas** — tudo acontece através de mensagens **efêmeras**, botões e modais. Ninguém vê as suas respostas.
+- **Pontos** — 20 pontos por resposta correta (máximo de **100/dia**).
+- **Streaks** — dias consecutivos formam uma sequência 🔥; se faltar um dia, ela reseta.
+- **Cargos de marco automáticos** — em 10, 20, 30, 60, 100, 300, 600 e 1000 dias. O bot **cria os cargos sozinho** (cor laranja), sem IDs fixos no código.
+- **Ranking global Top 5** — por comando e atualizado automaticamente em um canal dedicado.
+- **~1000 perguntas de inglês técnico** (múltipla escolha + digitação), geradas a partir de datasets fáceis de manter.
+- **Respostas de texto tolerantes** — ignora maiúsculas/minúsculas, espaços extras, pontuação no final e acentos.
+- **Job diário (cron)** — troca as perguntas à meia-noite e atualiza o ranking.
+
+---
+
+## 🧱 Stack
 
 Node.js · TypeScript · discord.js v14 · PostgreSQL · Prisma ORM · node-cron · Docker · Docker Compose
 
 ---
 
-## 📁 Project structure
+## 📁 Estrutura do projeto
 
 ```
 src/
 ├── commands/      # Slash commands (/daily, /profile, /ranking, /help)
-├── config/        # Env validation + gateway intents
-├── constants/     # Channels, game rules, custom ids
-├── data/          # questions.json + generator datasets
-├── database/      # Prisma client lifecycle
-├── events/        # ready + interactionCreate routers/handlers
-├── interfaces/    # Shared contracts (Command, Event, Question)
-├── jobs/          # node-cron daily rollover
-├── loaders/       # Command registration + event wiring
-├── middlewares/   # Interaction error boundary
-├── repositories/  # Data-access layer (Prisma queries)
-├── services/      # Business logic (daily, user, streak, role, ranking, question)
-├── types/         # Internal types (sessions)
-├── utils/         # Logger, normalization, dates, renderers
-├── validators/    # Answer validation
+├── config/        # Validação de env + intents do gateway
+├── constants/     # Canais, regras do jogo, custom ids
+├── data/          # questions.json + datasets do gerador
+├── database/      # Ciclo de vida do client Prisma
+├── events/        # Roteadores/handlers de ready + interactionCreate
+├── interfaces/    # Contratos compartilhados (Command, Event, Question)
+├── jobs/          # Rotação diária via node-cron
+├── loaders/       # Registro de comandos + ligação de eventos
+├── middlewares/   # Tratamento de erros das interações
+├── repositories/  # Camada de acesso a dados (queries Prisma)
+├── services/      # Regras de negócio (daily, user, streak, role, ranking, question)
+├── types/         # Tipos internos (sessões)
+├── utils/         # Logger, normalização, datas, renderizadores
+├── validators/    # Validação de respostas
 └── index.ts       # Bootstrap
 prisma/            # schema.prisma + seed.ts
 scripts/           # generate-questions.ts, deploy-commands.ts, copy-data.js
@@ -56,122 +57,123 @@ scripts/           # generate-questions.ts, deploy-commands.ts, copy-data.js
 
 ---
 
-## 🚀 Quick start (Docker — recommended)
+## 🚀 Início rápido (Docker — recomendado)
 
-This is the easiest path, both locally and on a VPS.
+É o caminho mais fácil, tanto localmente quanto na VPS.
 
 ```bash
-# 1. Clone and enter the project
-git clone <your-repo-url> english-streak
+# 1. Clone e entre no projeto
+git clone <url-do-seu-repo> english-streak
 cd english-streak
 
-# 2. Create your .env from the template and fill it in
+# 2. Crie seu .env a partir do template e preencha
 cp .env.example .env
 nano .env
 
-# 3. Build and start everything (bot + PostgreSQL)
+# 3. Suba tudo (bot + PostgreSQL)
 docker compose up -d --build
 
-# 4. Follow the logs
+# 4. Acompanhe os logs
 docker compose logs -f bot
 ```
 
-On first boot the bot will:
-1. apply the database schema,
-2. register slash commands,
-3. ensure today's questions exist,
-4. create the milestone roles (where it has permission),
-5. publish the initial ranking.
+Na primeira inicialização o bot vai:
+1. aplicar o schema do banco de dados,
+2. registrar os slash commands,
+3. garantir que as perguntas do dia existam,
+4. criar os cargos de marco (onde tiver permissão),
+5. publicar o ranking inicial.
 
-> The container entrypoint runs `prisma migrate deploy` if you have committed
-> migrations, otherwise `prisma db push` to sync the schema automatically.
+> O entrypoint do container roda `prisma migrate deploy` se você tiver migrations
+> commitadas; caso contrário, usa `prisma db push` para sincronizar o schema
+> automaticamente.
 
 ---
 
-## ⚙️ Configuration — environment variables
+## ⚙️ Configuração — variáveis de ambiente
 
-Copy `.env.example` to `.env`. **You can paste the same file straight onto the VPS.**
+Copie `.env.example` para `.env`. **Você pode colar o mesmo arquivo direto na VPS.**
 
-| Variable | Required | Description |
+| Variável | Obrigatória | Descrição |
 | --- | --- | --- |
-| `DISCORD_TOKEN` | ✅ | Bot token (Developer Portal → Bot → Token). The Client ID is auto-detected from it. |
-| `CHANNEL_DAILY_QUESTIONS` | — | Channel ID for the "new challenge" announcement. |
-| `CHANNEL_RANKING` | — | Channel ID where the live Top 5 is posted. |
-| `POSTGRES_USER` | ✅ | Database user. |
-| `POSTGRES_PASSWORD` | ✅ | Database password. |
-| `POSTGRES_DB` | ✅ | Database name. |
-| `POSTGRES_HOST` | — | `postgres` in Docker, `localhost` for local DB (default `localhost`). |
-| `POSTGRES_PORT` | — | Database port (default `5432`). |
-| `DATABASE_URL` | — | Full Prisma connection string. **Optional** — auto-assembled from the `POSTGRES_*` vars if omitted; set it only to override (or for local Prisma CLI commands). |
-| `TZ` | — | Timezone for the cron job (e.g. `America/Sao_Paulo`). |
-| `DAILY_CRON` | — | Cron expression for the daily reset (default `0 0 * * *`). |
+| `DISCORD_TOKEN` | ✅ | Token do bot (Developer Portal → Bot → Token). O Client ID é detectado automaticamente a partir dele. |
+| `CHANNEL_DAILY_QUESTIONS` | — | ID do canal para o aviso de "novo desafio". |
+| `CHANNEL_RANKING` | — | ID do canal onde o Top 5 ao vivo é publicado. |
+| `POSTGRES_USER` | ✅ | Usuário do banco. |
+| `POSTGRES_PASSWORD` | ✅ | Senha do banco. |
+| `POSTGRES_DB` | ✅ | Nome do banco. |
+| `POSTGRES_HOST` | — | `postgres` no Docker, `localhost` para banco local (padrão `localhost`). |
+| `POSTGRES_PORT` | — | Porta do banco (padrão `5432`). |
+| `DATABASE_URL` | — | Connection string completa do Prisma. **Opcional** — montada automaticamente a partir das variáveis `POSTGRES_*` se omitida; defina apenas para sobrescrever (ou para comandos do Prisma CLI localmente). |
+| `TZ` | — | Fuso horário do cron (ex.: `America/Sao_Paulo`). |
+| `DAILY_CRON` | — | Expressão cron do reset diário (padrão `0 0 * * *`). |
 | `LOG_LEVEL` | — | `debug` \| `info` \| `warn` \| `error`. |
 
-### Discord bot setup
+### Configuração do bot no Discord
 
-1. Go to <https://discord.com/developers/applications> → **New Application**.
-2. **Bot** → **Reset Token** → copy into `DISCORD_TOKEN`.
-3. **Installation / OAuth2 → URL Generator**: scopes `bot` + `applications.commands`.
-   Permissions: **Manage Roles**, **Send Messages**, **Embed Links**, **Use Slash Commands**.
-4. Invite the bot. **Important:** drag the bot's role **above** the milestone
-   roles in *Server Settings → Roles* so it can assign them.
+1. Acesse <https://discord.com/developers/applications> → **New Application**.
+2. **Bot** → **Reset Token** → copie para `DISCORD_TOKEN`.
+3. **Installation / OAuth2 → URL Generator**: escopos `bot` + `applications.commands`.
+   Permissões: **Manage Roles**, **Send Messages**, **Embed Links**, **Use Slash Commands**.
+4. Convide o bot. **Importante:** arraste o cargo do bot para **acima** dos cargos
+   de marco em *Configurações do Servidor → Cargos*, para que ele consiga atribuí-los.
 
-> ✅ No privileged intents need to be enabled in the Developer Portal.
+> ✅ Nenhuma intent privilegiada precisa ser ativada no Developer Portal.
 
-### Replacing the channel IDs
+### Substituindo os IDs dos canais
 
-Set them in `.env` (`CHANNEL_DAILY_QUESTIONS`, `CHANNEL_RANKING`) **or** edit
-`src/constants/channels.ts`. To copy an ID, enable *Developer Mode* in Discord,
-right-click a channel → **Copy Channel ID**.
+Defina-os no `.env` (`CHANNEL_DAILY_QUESTIONS`, `CHANNEL_RANKING`) **ou** edite
+`src/constants/channels.ts`. Para copiar um ID, ative o *Modo Desenvolvedor* no
+Discord, clique com o botão direito no canal → **Copiar ID do Canal**.
 
 ---
 
 ## 🗄️ Prisma & migrations
 
-The schema lives in `prisma/schema.prisma` (models: `User`, `DailyQuestion`,
+O schema fica em `prisma/schema.prisma` (modelos: `User`, `DailyQuestion`,
 `UserAnswer`).
 
 ```bash
-# Generate the Prisma client
+# Gerar o client Prisma
 npm run prisma:generate
 
-# Create + apply a migration during development
+# Criar + aplicar uma migration em desenvolvimento
 npm run prisma:migrate:dev -- --name init
 
-# Apply existing migrations in production
+# Aplicar migrations existentes em produção
 npm run prisma:migrate
 
-# Open Prisma Studio (DB GUI)
+# Abrir o Prisma Studio (interface gráfica do banco)
 npm run prisma:studio
 ```
 
-Inside Docker the schema is applied automatically by the entrypoint. To create a
-**versioned migration** (recommended before going live), run once locally
-against your database:
+Dentro do Docker o schema é aplicado automaticamente pelo entrypoint. Para criar
+uma **migration versionada** (recomendado antes de ir para produção), rode uma
+vez localmente contra o seu banco:
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-and commit the generated `prisma/migrations/` folder.
+e commite a pasta `prisma/migrations/` gerada.
 
 ---
 
-## 🧩 The question bank
+## 🧩 Banco de perguntas
 
-- ~1000 questions live in `src/data/questions.json`.
-- They are **generated**, not hand-written, from small datasets in
-  `src/data/generators/` (acronyms, vocabulary, grammar, translations, etc.).
+- ~1000 perguntas ficam em `src/data/questions.json`.
+- Elas são **geradas**, não escritas à mão, a partir de pequenos datasets em
+  `src/data/generators/` (siglas, vocabulário, gramática, traduções, etc.).
 
-To expand or regenerate the bank:
+Para expandir ou regerar o banco:
 
 ```bash
-# 1. Edit any file under src/data/generators/
-# 2. Regenerate questions.json (deterministic)
+# 1. Edite qualquer arquivo em src/data/generators/
+# 2. Regere o questions.json (determinístico)
 npm run generate:questions
 ```
 
-Question formats:
+Formatos de pergunta:
 
 ```jsonc
 { "id": 1, "type": "multiple_choice",
@@ -185,34 +187,34 @@ Question formats:
   "acceptedAnswers": ["I work with database."] }
 ```
 
-Text answers are normalized before comparison (case-insensitive, trims spaces,
-ignores trailing punctuation and accents).
+As respostas de texto são normalizadas antes da comparação (ignora
+maiúsculas/minúsculas, remove espaços extras, ignora pontuação no final e acentos).
 
 ---
 
-## 💻 Local development (without Docker)
+## 💻 Desenvolvimento local (sem Docker)
 
-Requires **Node.js 20+** and a running **PostgreSQL**.
+Requer **Node.js 20+** e um **PostgreSQL** rodando.
 
 ```bash
 npm install
-cp .env.example .env          # set your local POSTGRES_* (host = localhost) and,
-                              # for the Prisma CLI, uncomment DATABASE_URL
+cp .env.example .env          # defina as POSTGRES_* locais (host = localhost) e,
+                              # para o Prisma CLI, descomente DATABASE_URL
 
 npm run prisma:generate
 npm run prisma:migrate:dev -- --name init
-npm run generate:questions    # (already shipped, run to refresh)
-npm run db:seed               # optional: sets today's questions
+npm run generate:questions    # (já vem pronto, rode para atualizar)
+npm run db:seed               # opcional: define as perguntas de hoje
 
-# Register slash commands
-# (optional: export DISCORD_GUILD_ID=<server id> for instant guild-scoped updates)
+# Registrar os slash commands
+# (opcional: export DISCORD_GUILD_ID=<id do servidor> para atualização instantânea por servidor)
 npm run deploy:commands
 
-# Run in watch mode
+# Rodar em modo watch
 npm run dev
 ```
 
-Build & run the compiled output:
+Buildar e rodar a saída compilada:
 
 ```bash
 npm run build
@@ -221,99 +223,100 @@ npm start
 
 ---
 
-## 🖥️ Deploying on a VPS (Linux)
+## 🖥️ Deploy em uma VPS (Linux)
 
 ```bash
-# 1. Install Docker + Compose plugin (Debian/Ubuntu)
+# 1. Instale o Docker + plugin Compose (Debian/Ubuntu)
 curl -fsSL https://get.docker.com | sh
 
-# 2. Get the code
-git clone <your-repo-url> english-streak && cd english-streak
+# 2. Pegue o código
+git clone <url-do-seu-repo> english-streak && cd english-streak
 
-# 3. Configure (paste your .env)
+# 3. Configure (cole o seu .env)
 cp .env.example .env && nano .env
 
-# 4. Launch
+# 4. Suba
 docker compose up -d --build
 
-# 5. Verify
+# 5. Verifique
 docker compose ps
 docker compose logs -f bot
 ```
 
-The bot and database are isolated on a private Docker network. PostgreSQL is only
-published on `127.0.0.1:5432` (edit/remove that in `docker-compose.yml` to keep
-it fully internal).
+O bot e o banco ficam isolados em uma rede Docker privada. O PostgreSQL é
+publicado apenas em `127.0.0.1:5432` (edite/remova isso no `docker-compose.yml`
+para mantê-lo totalmente interno).
 
-### Updating to a new version
+### Atualizando para uma nova versão
 
 ```bash
 cd english-streak
 git pull
-docker compose up -d --build      # rebuilds the bot image
+docker compose up -d --build      # reconstrói a imagem do bot
 docker compose logs -f bot
 ```
 
-Slash commands re-register automatically on startup. Schema changes are applied
-by the entrypoint (or run `docker compose run --rm bot npx prisma migrate deploy`).
+Os slash commands são re-registrados automaticamente na inicialização. As
+mudanças de schema são aplicadas pelo entrypoint (ou rode
+`docker compose run --rm bot npx prisma migrate deploy`).
 
 ---
 
-## 💾 PostgreSQL backup & restore
+## 💾 Backup & restauração do PostgreSQL
 
-**Backup** (creates a timestamped dump on the host):
+**Backup** (cria um dump com data no host):
 
 ```bash
 docker compose exec -T postgres \
   pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup_$(date +%F).sql
 ```
 
-**Restore**:
+**Restauração**:
 
 ```bash
 cat backup_2026-06-21.sql | docker compose exec -T postgres \
   psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
 ```
 
-**Automated daily backup** (host crontab example):
+**Backup diário automatizado** (exemplo de crontab no host):
 
 ```cron
 0 3 * * * cd /opt/english-streak && docker compose exec -T postgres pg_dump -U english_streak english_streak | gzip > /opt/backups/es_$(date +\%F).sql.gz
 ```
 
-The Postgres data also persists in the named volume `postgres_data` across
-restarts and rebuilds.
+Os dados do Postgres também persistem no volume nomeado `postgres_data` entre
+reinícios e rebuilds.
 
 ---
 
-## 🔒 Privacy & intents
+## 🔒 Privacidade & intents
 
-- **No `MESSAGE_CONTENT`**, **no `PRESENCE`**, **no continuous `GUILD_MEMBERS`** monitoring.
-- Only the base `Guilds` intent is used (see `src/config/intents.ts`).
-- Role assignment uses the member object that already comes inside each interaction.
-- Stored data is limited to: Discord user ID, username, points, game stats,
-  streak and the bot's own answer history. **No messages, presence or
-  conversation content are ever stored.**
+- **Sem `MESSAGE_CONTENT`**, **sem `PRESENCE`**, **sem monitoramento contínuo de `GUILD_MEMBERS`**.
+- Apenas a intent base `Guilds` é usada (veja `src/config/intents.ts`).
+- A atribuição de cargos usa o objeto de membro que já vem dentro de cada interação.
+- Os dados armazenados se limitam a: ID do usuário no Discord, username, pontos,
+  estatísticas do jogo, streak e o histórico de respostas do próprio sistema.
+  **Mensagens, presença ou conteúdo de conversas nunca são armazenados.**
 
 ---
 
-## 🧰 Available scripts
+## 🧰 Scripts disponíveis
 
-| Script | Description |
+| Script | Descrição |
 | --- | --- |
-| `npm run dev` | Run with hot reload (ts-node-dev). |
-| `npm run build` | Compile TypeScript + copy data into `dist/`. |
-| `npm start` | Run the compiled bot. |
-| `npm run generate:questions` | Regenerate `questions.json` from the datasets. |
-| `npm run deploy:commands` | Register slash commands with Discord. |
-| `npm run db:seed` | Seed today's daily questions. |
-| `npm run prisma:generate` | Generate the Prisma client. |
-| `npm run prisma:migrate` | Apply migrations (production). |
-| `npm run prisma:migrate:dev` | Create & apply a migration (dev). |
-| `npm run prisma:studio` | Open Prisma Studio. |
+| `npm run dev` | Roda com hot reload (ts-node-dev). |
+| `npm run build` | Compila o TypeScript + copia os dados para `dist/`. |
+| `npm start` | Roda o bot compilado. |
+| `npm run generate:questions` | Regera o `questions.json` a partir dos datasets. |
+| `npm run deploy:commands` | Registra os slash commands no Discord. |
+| `npm run db:seed` | Popula as perguntas do dia. |
+| `npm run prisma:generate` | Gera o client Prisma. |
+| `npm run prisma:migrate` | Aplica migrations (produção). |
+| `npm run prisma:migrate:dev` | Cria & aplica uma migration (dev). |
+| `npm run prisma:studio` | Abre o Prisma Studio. |
 
 ---
 
-## 📜 License
+## 📜 Licença
 
 MIT.
