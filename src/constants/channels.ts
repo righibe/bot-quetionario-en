@@ -8,6 +8,6 @@ import { env } from '../config';
  * which takes precedence. Replace the placeholders with your real IDs.
  */
 export const CHANNELS = {
-  dailyQuestions: env.channels.dailyQuestions || '000000000000000000',
-  ranking: env.channels.ranking || '000000000000000000',
+  dailyQuestions: env.channels.dailyQuestions,
+  ranking: env.channels.ranking,
 } as const;

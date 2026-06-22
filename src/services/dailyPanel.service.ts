@@ -5,6 +5,7 @@ import {
   Client,
   EmbedBuilder,
   Message,
+  PermissionsBitField,
   TextChannel,
 } from 'discord.js';
 import {
@@ -70,7 +71,10 @@ export class DailyPanelService {
   async updateChannel(client: Client): Promise<void> {
     const channelId = CHANNELS.dailyQuestions;
     if (!channelId) {
-      log.debug('No daily channel configured; skipping panel update.');
+      log.warn(
+        'CHANNEL_DAILY_QUESTIONS is not set — the daily panel cannot be published. ' +
+          'Set it in your .env (channel id) and restart.',
+      );
       return;
     }
 
@@ -83,9 +87,14 @@ export class DailyPanelService {
       }
       channel = fetched as TextChannel;
     } catch (err) {
-      log.warn(`Failed to fetch daily channel ${channelId}.`, err);
+      log.warn(
+        `Failed to fetch daily channel ${channelId}. Check the id is correct and the bot can see the channel.`,
+        err,
+      );
       return;
     }
+
+    if (!this.hasRequiredPermissions(channel, client)) return;
 
     const embed = this.buildEmbed();
     const components = this.buildComponents();
@@ -103,6 +112,32 @@ export class DailyPanelService {
     } catch (err) {
       log.error('Failed to publish daily panel message.', err);
     }
+  }
+
+  /**
+   * Verifies the bot can actually post in the channel, logging a clear,
+   * actionable error otherwise (the #1 cause of a missing panel in a
+   * "bot-only" locked-down channel).
+   */
+  private hasRequiredPermissions(channel: TextChannel, client: Client): boolean {
+    const me = client.user ? channel.permissionsFor(client.user.id) : null;
+    if (!me) return true; // Can't determine; let the send attempt surface it.
+
+    const required = [
+      PermissionsBitField.Flags.ViewChannel,
+      PermissionsBitField.Flags.SendMessages,
+      PermissionsBitField.Flags.EmbedLinks,
+    ];
+    const missing = required.filter((flag) => !me.has(flag));
+    if (missing.length > 0) {
+      log.error(
+        `Missing permissions in daily channel ${channel.id}: the bot needs ` +
+          'View Channel, Send Messages and Embed Links. Grant these to the bot ' +
+          'role in the channel settings (keep the channel bot-only for everyone else).',
+      );
+      return false;
+    }
+    return true;
   }
 
   /** Locates the existing panel message authored by the bot, if any. */

@@ -22,8 +22,13 @@ export class RankingService {
   /** Cached id of the auto-updated ranking message, to avoid re-scanning. */
   private rankingMessageId: string | null = null;
 
-  /** Builds the leaderboard embed from the current top users. */
-  async buildEmbed(): Promise<EmbedBuilder> {
+  /**
+   * Builds the leaderboard embed from the current top users.
+   * @param includeUsage append the "how to use this channel" field (for the
+   *   permanent channel message; omitted in the /ranking reply that already
+   *   shows the caller's position).
+   */
+  async buildEmbed(includeUsage = true): Promise<EmbedBuilder> {
     const top = await userService.getLeaderboard(RANKING_SIZE);
 
     const embed = new EmbedBuilder()
@@ -36,13 +41,27 @@ export class RankingService {
       embed.setDescription(
         'No one has played yet. Be the first — start the challenge in the daily channel! 🚀',
       );
+      if (includeUsage) this.addUsageField(embed);
       return embed;
     }
 
     embed.setDescription(
       top.map((user, i) => this.formatRow(user, i)).join('\n\n'),
     );
+    if (includeUsage) this.addUsageField(embed);
     return embed;
+  }
+
+  /** Explains how to use this channel (the commands), shown on every embed. */
+  private addUsageField(embed: EmbedBuilder): void {
+    embed.addFields({
+      name: 'ℹ️ How to use this channel',
+      value: [
+        '• `/ranking` — see this Top 5 **and your own position**',
+        '• `/profile` — your full stats (points, streak, accuracy)',
+        '_Both replies are private, so this channel stays clean._',
+      ].join('\n'),
+    });
   }
 
   private formatRow(user: User, index: number): string {
@@ -65,7 +84,10 @@ export class RankingService {
   async updateRankingChannel(client: Client): Promise<void> {
     const channelId = CHANNELS.ranking;
     if (!channelId) {
-      log.debug('No ranking channel configured; skipping auto-update.');
+      log.warn(
+        'CHANNEL_RANKING is not set — the ranking message cannot be published. ' +
+          'Set it in your .env (channel id) and restart.',
+      );
       return;
     }
 
