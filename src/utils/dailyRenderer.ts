@@ -5,7 +5,7 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import { MultipleChoiceQuestion } from '../interfaces';
-import { BRAND_COLOR, mcButtonId } from '../constants';
+import { BRAND_COLOR, mcButtonId, POINTS_PER_CORRECT_ANSWER } from '../constants';
 import type { SubmitResult } from '../services';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E'];
@@ -25,12 +25,12 @@ export function renderQuestion(
   index: number,
   total: number,
 ): RenderedQuestion {
-  const position = `Question ${index + 1}/${total}`;
+  const position = `Pergunta ${index + 1}/${total}`;
   const embed = new EmbedBuilder().setColor(BRAND_COLOR).setTitle(`📝 ${position}`);
 
   const lines = question.options.map((opt, i) => `**${LETTERS[i]})** ${opt}`);
   embed.setDescription(`${question.question}\n\n${lines.join('\n')}`);
-  embed.setFooter({ text: 'Choose the correct option below.' });
+  embed.setFooter({ text: 'Clique na opção correta abaixo.' });
 
   const row = new ActionRowBuilder<ButtonBuilder>();
   question.options.forEach((_opt, i) => {
@@ -49,11 +49,13 @@ export function renderFeedback(outcome: SubmitResult): EmbedBuilder {
   const embed = new EmbedBuilder().setColor(outcome.isCorrect ? 0x2ecc71 : 0xe74c3c);
 
   if (outcome.isCorrect) {
-    embed.setTitle('✅ Correct!').setDescription('Nice work. +20 points secured.');
+    embed
+      .setTitle('✅ Acertou!')
+      .setDescription(`Mandou bem! +${POINTS_PER_CORRECT_ANSWER} pontos garantidos.`);
   } else {
     embed
-      .setTitle('❌ Not quite')
-      .setDescription(`The correct answer was:\n> **${outcome.correctAnswer}**`);
+      .setTitle('❌ Quase lá')
+      .setDescription(`A resposta correta era:\n> **${outcome.correctAnswer}**`);
   }
   return embed;
 }
@@ -62,25 +64,26 @@ export function renderFeedback(outcome: SubmitResult): EmbedBuilder {
 export function renderSummary(outcome: SubmitResult): EmbedBuilder {
   const completion = outcome.completion;
   const correct = completion
-    ? completion.pointsEarned / 20
+    ? completion.pointsEarned / POINTS_PER_CORRECT_ANSWER
     : outcome.totalQuestions;
   const embed = new EmbedBuilder()
     .setColor(BRAND_COLOR)
-    .setTitle('🎉 Daily challenge complete!');
+    .setTitle('🎉 Desafio diário concluído!');
 
   const lines: string[] = [
-    `**Score:** ${correct}/${outcome.totalQuestions} correct`,
-    `**Points earned:** +${completion?.pointsEarned ?? 0}`,
+    `🎯 **Acertos:** ${correct}/${outcome.totalQuestions}`,
+    `🏅 **Pontos ganhos:** +${completion?.pointsEarned ?? 0}`,
   ];
 
   if (completion) {
     const streak = completion.streak;
-    lines.push(`**Current streak:** 🔥 ${streak.currentStreak} day(s)`);
-    if (streak.isNewBest) lines.push('🏅 **New personal best streak!**');
-    if (streak.wasReset) lines.push('⚠️ Your streak had reset — keep it going daily!');
+    lines.push(`🔥 **Ofensiva atual:** ${streak.currentStreak} dia(s)`);
+    if (streak.isNewBest) lines.push('🏆 **Novo recorde pessoal de ofensiva!**');
+    if (streak.wasReset)
+      lines.push('⚠️ Sua ofensiva tinha zerado — jogue todo dia para mantê-la!');
   }
 
-  lines.push('\nCome back tomorrow to keep your streak alive! 🔥');
+  lines.push('\nVolte amanhã para manter sua ofensiva viva! 🔥');
   embed.setDescription(lines.join('\n'));
   return embed;
 }

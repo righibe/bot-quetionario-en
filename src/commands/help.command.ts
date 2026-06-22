@@ -18,45 +18,45 @@ import {
 export const helpCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('help')
-    .setDescription('Learn how English Streak works and see all commands.'),
+    .setDescription('Veja como o English Streak funciona e os comandos.'),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const milestones = STREAK_MILESTONES.map((m) => `\`${m}\``).join(', ');
 
     const embed = new EmbedBuilder()
       .setColor(BRAND_COLOR)
-      .setTitle('🔥 English Streak — Help')
+      .setTitle('🔥 English Streak — Ajuda')
       .setDescription(
-        'Learn **technical English** for software development, one day at a time!',
+        'Aprenda **inglês técnico** para desenvolvimento de software, um dia de cada vez!',
       )
       .addFields(
         {
-          name: '📋 Commands',
+          name: '📋 Comandos',
           value: [
-            '`/profile_duolingo` — See your stats and ranking position (private).',
-            '`/help` — Show this message.',
-            '_The global Top 5 lives as a permanent message in the ranking channel._',
+            '`/profile_duolingo` — Veja suas estatísticas e posição no ranking (privado).',
+            '`/help` — Mostra esta mensagem.',
+            '_O Top 5 global fica como mensagem permanente no canal de ranking._',
           ].join('\n'),
         },
         {
-          name: '🎯 How it works',
+          name: '🎯 Como funciona',
           value: [
-            '• Go to the **daily channel** and press **▶️ Start today’s challenge**.',
-            '• Just **click the correct option** — every question is multiple choice (no typing).',
-            `• Everyone gets the **same 5 questions** each day, **once per day**.`,
-            `• Each correct answer = **${POINTS_PER_CORRECT_ANSWER} points** (max **${MAX_DAILY_POINTS}**/day).`,
-            '• Everything is **private** (ephemeral) — no one sees your answers.',
+            '🟢 Vá ao **canal de perguntas** e clique em **▶️ Começar o desafio de hoje**.',
+            '🔘 Basta **clicar na opção correta** — tudo é múltipla escolha (sem digitar).',
+            '📅 Todo mundo recebe as **mesmas 5 perguntas** por dia, **uma vez ao dia**.',
+            `🏅 Cada acerto vale **${POINTS_PER_CORRECT_ANSWER} pontos** (máx. **${MAX_DAILY_POINTS}**/dia).`,
+            '🔒 Tudo é **privado** (efêmero) — ninguém vê suas respostas.',
           ].join('\n'),
         },
         {
-          name: '🔥 Streaks & roles',
+          name: '🔥 Ofensivas & cargos',
           value: [
-            'Answer every day to grow your streak. Miss a day and it resets.',
-            `Reach a milestone (${milestones} days) to earn an automatic 🔥 role!`,
+            'Responda todo dia para aumentar sua ofensiva. Faltou um dia, ela zera.',
+            `Alcance um marco (${milestones} dias) e ganhe um cargo 🔥 automático!`,
           ].join('\n'),
         },
       )
-      .setFooter({ text: 'Start now from the daily channel button 🚀' });
+      .setFooter({ text: 'Comece agora pelo botão no canal de perguntas 🚀' });
 
     await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   },

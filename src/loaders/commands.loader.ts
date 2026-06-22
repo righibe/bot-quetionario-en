@@ -28,6 +28,10 @@ export async function registerCommands(): Promise<void> {
     };
     const clientId = application.id;
 
+    // We register per-guild only. Wipe any stale GLOBAL commands left over from
+    // older versions (e.g. an old global /profile) so they stop appearing.
+    await rest.put(Routes.applicationCommands(clientId), { body: [] });
+
     const guildIds = await resolveGuildIds(rest);
     if (guildIds.length === 0) {
       log.warn(

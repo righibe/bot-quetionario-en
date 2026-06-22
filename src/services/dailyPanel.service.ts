@@ -20,8 +20,10 @@ import { createLogger } from '../utils/logger';
 
 const log = createLogger('DailyPanelService');
 
-/** Hidden marker placed in the embed footer to locate the bot's panel message. */
-const PANEL_FOOTER_TAG = 'English Streak • Daily Challenge';
+/** Marker placed in the embed footer to locate the bot's panel message. */
+const PANEL_FOOTER_TAG = 'English Streak • Desafio Diário';
+/** Accepted footer tags (incl. the legacy English one) for locating the panel. */
+const PANEL_FOOTER_TAGS = [PANEL_FOOTER_TAG, 'English Streak • Daily Challenge'];
 
 /**
  * Maintains the single, permanent "panel" message in the daily-questions
@@ -37,17 +39,17 @@ export class DailyPanelService {
   buildEmbed(): EmbedBuilder {
     return new EmbedBuilder()
       .setColor(BRAND_COLOR)
-      .setTitle('🔥 Daily English Challenge')
+      .setTitle('🔥 Desafio Diário de Inglês')
       .setDescription(
         [
-          'Practice **technical English** every day, one challenge at a time.',
+          'Pratique **inglês técnico** todos os dias, um desafio de cada vez.',
           '',
-          '**How to play**',
-          `• Press the button below to start today’s **${DAILY_QUESTION_COUNT} questions**.`,
-          '• Just **click the correct option** — every question is multiple choice.',
-          `• Each correct answer = **${POINTS_PER_CORRECT_ANSWER} pts** (up to **${MAX_DAILY_POINTS}/day**).`,
-          '• Your questions and answers are **private** — only you can see them.',
-          '• You can play **once per day**. Come back daily to grow your 🔥 streak!',
+          '**Como jogar**',
+          `🟢 Clique no botão abaixo para começar as **${DAILY_QUESTION_COUNT} perguntas** de hoje.`,
+          '🔘 Basta **clicar na opção correta** — todas são de múltipla escolha.',
+          `🏅 Cada acerto vale **${POINTS_PER_CORRECT_ANSWER} pts** (até **${MAX_DAILY_POINTS}/dia**).`,
+          '🔒 Suas perguntas e respostas são **privadas** — só você as vê.',
+          '🔥 Jogue **uma vez por dia** e volte sempre para aumentar sua ofensiva!',
         ].join('\n'),
       )
       .setFooter({ text: PANEL_FOOTER_TAG });
@@ -58,7 +60,7 @@ export class DailyPanelService {
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId(CUSTOM_IDS.daily.start)
-        .setLabel('▶️ Start today’s challenge')
+        .setLabel('▶️ Começar o desafio de hoje')
         .setStyle(ButtonStyle.Success),
     );
     return [row];
@@ -158,7 +160,9 @@ export class DailyPanelService {
       const mine = recent.find(
         (m) =>
           m.author.id === client.user?.id &&
-          m.embeds.some((e) => e.footer?.text === PANEL_FOOTER_TAG),
+          m.embeds.some(
+            (e) => e.footer != null && PANEL_FOOTER_TAGS.includes(e.footer.text),
+          ),
       );
       return mine ?? null;
     } catch (err) {

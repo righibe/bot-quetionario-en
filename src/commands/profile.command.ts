@@ -15,7 +15,7 @@ import { BRAND_COLOR } from '../constants';
 export const profileCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('profile_duolingo')
-    .setDescription('View your English Streak stats and ranking position.'),
+    .setDescription('Veja suas estatísticas e posição no ranking.'),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const user = await userService.ensureUser(
@@ -25,30 +25,30 @@ export const profileCommand: Command = {
     const stats = userService.buildProfile(user);
     const { position, total } = await userService.getRank(user);
     const rankValue =
-      stats.points > 0 ? `#${position} of ${total}` : 'Unranked';
+      stats.points > 0 ? `#${position} de ${total}` : 'Sem ranking';
 
     const embed = new EmbedBuilder()
       .setColor(BRAND_COLOR)
-      .setTitle(`📊 Profile — ${stats.username}`)
+      .setTitle(`📊 Perfil — ${stats.username}`)
       .setThumbnail(interaction.user.displayAvatarURL())
       .addFields(
-        { name: '📍 Ranking', value: rankValue, inline: true },
-        { name: '🏅 Points', value: `${stats.points}`, inline: true },
-        { name: '🔥 Current streak', value: `${stats.currentStreak} day(s)`, inline: true },
-        { name: '🏆 Best streak', value: `${stats.bestStreak} day(s)`, inline: true },
+        { name: '📍 Posição', value: rankValue, inline: true },
+        { name: '🏅 Pontos', value: `${stats.points}`, inline: true },
+        { name: '🔥 Ofensiva atual', value: `${stats.currentStreak} dia(s)`, inline: true },
+        { name: '🏆 Melhor ofensiva', value: `${stats.bestStreak} dia(s)`, inline: true },
         {
-          name: '❓ Questions answered',
+          name: '❓ Perguntas respondidas',
           value: `${stats.totalQuestionsAnswered}`,
           inline: true,
         },
         {
-          name: '✅ Correct answers',
+          name: '✅ Respostas corretas',
           value: `${stats.totalCorrectAnswers}`,
           inline: true,
         },
-        { name: '🎯 Accuracy', value: `${stats.accuracy}%`, inline: true },
+        { name: '🎯 Precisão', value: `${stats.accuracy}%`, inline: true },
       )
-      .setFooter({ text: 'Keep practicing daily to climb the ranking!' });
+      .setFooter({ text: 'Continue praticando todo dia para subir no ranking!' });
 
     await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   },
