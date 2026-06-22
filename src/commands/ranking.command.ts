@@ -23,7 +23,7 @@ export const rankingCommand: Command = {
       interaction.user.username,
     );
 
-    const embed = await rankingService.buildEmbed();
+    const embed = await rankingService.buildEmbed(false);
     const { position, total } = await userService.getRank(user);
 
     embed.addFields({
