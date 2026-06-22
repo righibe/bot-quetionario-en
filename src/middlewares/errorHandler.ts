@@ -50,7 +50,7 @@ export async function withErrorBoundary(
     log.error(`Unhandled error in ${scope}.`, err);
     await safeReplyError(
       interaction,
-      '⚠️ Something went wrong. Please try again in a moment.',
+      '⚠️ Algo deu errado. Tente novamente em instantes.',
     );
   }
 }

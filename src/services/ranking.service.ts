@@ -11,8 +11,10 @@ import { userService } from './user.service';
 
 const log = createLogger('RankingService');
 
-/** Hidden marker placed in the embed footer to locate the bot's ranking message. */
-const RANKING_FOOTER_TAG = 'English Streak • Global Ranking';
+/** Marker placed in the embed footer to locate the bot's ranking message. */
+const RANKING_FOOTER_TAG = 'English Streak • Ranking Global';
+/** Accepted footer tags (incl. the legacy English one) for locating the message. */
+const RANKING_FOOTER_TAGS = [RANKING_FOOTER_TAG, 'English Streak • Global Ranking'];
 
 /**
  * Builds and maintains the global Top-5 leaderboard as a single permanent
@@ -28,13 +30,12 @@ export class RankingService {
 
     const embed = new EmbedBuilder()
       .setColor(BRAND_COLOR)
-      .setTitle('🏆 Global Ranking — Top 5')
-      .setFooter({ text: RANKING_FOOTER_TAG })
-      .setTimestamp(new Date());
+      .setTitle('🏆 Ranking Global — Top 5')
+      .setFooter({ text: RANKING_FOOTER_TAG });
 
     if (top.length === 0) {
       embed.setDescription(
-        'No one has played yet. Be the first — start the challenge in the daily channel! 🚀',
+        'Ninguém jogou ainda. Seja o primeiro — comece o desafio no canal de perguntas! 🚀',
       );
       this.addUsageField(embed);
       return embed;
@@ -50,11 +51,11 @@ export class RankingService {
   /** Explains how to use this channel (the commands), shown on every embed. */
   private addUsageField(embed: EmbedBuilder): void {
     embed.addFields({
-      name: 'ℹ️ How to use this channel',
+      name: 'ℹ️ Como usar este canal',
       value: [
-        'This Top 5 updates automatically.',
-        '• `/profile_duolingo` — see your full stats **and your position** (private)',
-        '_The reply is private, so this channel stays clean._',
+        'Este Top 5 é atualizado automaticamente.',
+        '• `/profile_duolingo` — veja suas estatísticas completas **e sua posição** (privado)',
+        '_A resposta é privada, então este canal fica sempre limpo._',
       ].join('\n'),
     });
   }
@@ -62,8 +63,8 @@ export class RankingService {
   private formatRow(user: User, index: number): string {
     const label = RANK_LABELS[index] ?? `#${index + 1}`;
     return [
-      `${label} **${this.escape(user.username)}**`,
-      `> 🏅 ${user.points} pts • 🔥 ${user.currentStreak} day streak • 🏆 best ${user.bestStreak}`,
+      `${label}  **${this.escape(user.username)}**`,
+      `> 🏅 ${user.points} pts · 🔥 ${user.currentStreak} dia(s) de ofensiva · 🏆 recorde ${user.bestStreak}`,
     ].join('\n');
   }
 
@@ -134,7 +135,9 @@ export class RankingService {
       const mine = recent.find(
         (m) =>
           m.author.id === client.user?.id &&
-          m.embeds.some((e) => e.footer?.text === RANKING_FOOTER_TAG),
+          m.embeds.some(
+            (e) => e.footer != null && RANKING_FOOTER_TAGS.includes(e.footer.text),
+          ),
       );
       return mine ?? null;
     } catch (err) {

@@ -24,7 +24,7 @@ export const readyEvent: BotEvent<Events.ClientReady> = {
 
     client.user.setPresence({
       status: 'online',
-      activities: [{ name: 'learn English daily 🔥', type: ActivityType.Playing }],
+      activities: [{ name: 'aprender inglês todo dia 🔥', type: ActivityType.Playing }],
     });
 
     // Ensure today's questions exist so the challenge works immediately.

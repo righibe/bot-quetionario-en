@@ -18,12 +18,12 @@ import { createLogger } from '../utils/logger';
 const log = createLogger('DailyInteraction');
 
 const SESSION_EXPIRED =
-  '⌛ Your daily session expired or was not found. Press **Start today’s challenge** in the daily channel to begin again.';
+  '⌛ Sua sessão expirou ou não foi encontrada. Clique em **Começar o desafio de hoje** no canal de perguntas para recomeçar.';
 const ALREADY_DONE =
-  '✅ You already completed today’s challenge!\n' +
-  'Come back tomorrow to keep your 🔥 streak alive.';
+  '✅ Você já completou o desafio de hoje!\n' +
+  'Volte amanhã para manter sua ofensiva 🔥 viva.';
 const NO_QUESTIONS =
-  '⚠️ No questions are available right now. Please try again later.';
+  '⚠️ Nenhuma pergunta disponível no momento. Tente novamente mais tarde.';
 
 /** True if this interaction belongs to the daily flow (a button). */
 export function isDailyComponent(interaction: Interaction): boolean {
@@ -148,7 +148,7 @@ async function runCompletionSideEffects(
       );
       if (granted) {
         await interaction.followUp({
-          content: `🎖️ You earned the **${granted}** role for your streak!`,
+          content: `🎖️ Você ganhou o cargo **${granted}** pela sua ofensiva!`,
           flags: MessageFlags.Ephemeral,
         });
       }
