@@ -34,8 +34,9 @@ export const helpCommand: Command = {
           name: '📋 Comandos',
           value: [
             '`/profile_duolingo` — Veja suas estatísticas e posição no ranking (privado).',
+            '`/ranking_global` — Veja o ranking de todos os servidores e sua posição (privado).',
             '`/help` — Mostra esta mensagem.',
-            '_O Top 5 global fica como mensagem permanente no canal de ranking._',
+            '_O Top 5 **deste servidor** fica como mensagem permanente no canal de ranking._',
           ].join('\n'),
         },
         {

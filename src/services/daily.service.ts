@@ -201,6 +201,7 @@ export class DailyService {
       user,
       session.correctCount,
       session.questions.length,
+      session.guildId,
     );
   }
 

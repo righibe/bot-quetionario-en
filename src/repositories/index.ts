@@ -7,3 +7,11 @@ export {
   userAnswerRepository,
   UserAnswerRepository,
 } from './userAnswer.repository';
+export {
+  guildScoreRepository,
+  GuildScoreRepository,
+} from './guildScore.repository';
+export type {
+  GuildScoreWithUser,
+  GuildScoreDelta,
+} from './guildScore.repository';

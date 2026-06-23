@@ -1,5 +1,9 @@
 import { User } from '@prisma/client';
-import { userRepository } from '../repositories';
+import {
+  guildScoreRepository,
+  userRepository,
+  GuildScoreWithUser,
+} from '../repositories';
 import { POINTS_PER_CORRECT_ANSWER } from '../constants';
 import { toUtcDateOnly } from '../utils/date';
 import { streakService, StreakUpdate } from './streak.service';
@@ -63,6 +67,7 @@ export class UserService {
     user: User,
     correctCount: number,
     totalQuestions: number,
+    guildId: string | null = null,
     now: Date = new Date(),
   ): Promise<DailyCompletionResult> {
     const pointsEarned = correctCount * POINTS_PER_CORRECT_ANSWER;
@@ -83,12 +88,30 @@ export class UserService {
       lastDailyCompleted: toUtcDateOnly(now),
     });
 
+    // Attribute these points to the server the user played from, powering the
+    // per-server leaderboard. The global ranking still reads from User above.
+    if (guildId) {
+      await guildScoreRepository.increment(guildId, user.id, user.username, {
+        points: pointsEarned,
+        correct: correctCount,
+        answered: totalQuestions,
+      });
+    }
+
     return { user: updated, pointsEarned, streak };
   }
 
-  /** Top N users for the leaderboard. */
+  /** Top N users for the GLOBAL leaderboard (across all servers). */
   getLeaderboard(limit: number): Promise<User[]> {
     return userRepository.findTop(limit);
+  }
+
+  /** Top N scorers within a single server. */
+  getGuildLeaderboard(
+    guildId: string,
+    limit: number,
+  ): Promise<GuildScoreWithUser[]> {
+    return guildScoreRepository.findTop(guildId, limit);
   }
 
   /** The user's 1-based position in the global ranking and the total players. */
@@ -98,6 +121,26 @@ export class UserService {
       userRepository.count(),
     ]);
     return { position, total };
+  }
+
+  /**
+   * The user's 1-based position WITHIN a server and that server's player count,
+   * plus the points they earned there. `position` is 0 and `points` is 0 when
+   * the user has not scored in this server yet.
+   */
+  async getGuildRank(
+    guildId: string,
+    userId: string,
+  ): Promise<{ position: number; total: number; points: number }> {
+    const score = await guildScoreRepository.findOne(guildId, userId);
+    const total = await guildScoreRepository.count(guildId);
+
+    if (!score || score.points === 0) {
+      return { position: 0, total, points: 0 };
+    }
+
+    const position = await guildScoreRepository.rankByPoints(guildId, score.points);
+    return { position, total, points: score.points };
   }
 }
 

@@ -3,7 +3,8 @@
 Um **bot de Discord no estilo Duolingo** para aprender **inglês técnico** voltado
 ao desenvolvimento de software. Os usuários respondem **5 perguntas diárias**,
 ganham pontos, mantêm uma **sequência (streak)** diária, disputam um **ranking
-global** e recebem automaticamente **cargos de marco 🔥**.
+por servidor** (além do **ranking global**) e recebem automaticamente **cargos de
+marco 🔥**.
 
 Construído para ser **livre de intents privilegiadas** (sem `MESSAGE_CONTENT`,
 sem `PRESENCE`, sem monitoramento contínuo de membros), então escala além do
@@ -19,7 +20,7 @@ limite de verificação do Discord sem justificativas complexas.
 - **Pontos** — 20 pontos por resposta correta (máximo de **100/dia**).
 - **Streaks** — dias consecutivos formam uma sequência 🔥; se faltar um dia, ela reseta.
 - **Cargos de marco automáticos** — em 10, 20, 30, 60, 100, 300, 600 e 1000 dias. O bot **cria os cargos sozinho** (cor laranja), sem IDs fixos no código.
-- **Ranking global Top 5** — uma única **mensagem permanente** no canal de ranking, atualizada automaticamente. `/profile_duolingo` mostra os seus stats e a sua posição em resposta **efêmera** (não polui o canal).
+- **Ranking do servidor Top 5** — uma única **mensagem permanente** no canal de ranking, atualizada automaticamente, mostrando **apenas os jogadores daquele servidor** (os pontos são atribuídos ao servidor de onde a pessoa jogou). `/ranking_global` mostra o Top 5 **somando todos os servidores** com as estatísticas e a sua posição; `/profile_duolingo` mostra os seus stats. Tudo em resposta **efêmera** (não polui o canal).
 - **Comandos por servidor (nunca globais)** — os slash commands são registrados na guild (instantâneo). Para usar em outro servidor, defina `DISCORD_GUILD_ID` com o ID dele.
 - **~1000 perguntas de inglês técnico**, geradas a partir de datasets fáceis de manter.
 - **Job diário (cron)** — troca as perguntas à meia-noite e atualiza o ranking e o painel diário.
@@ -36,7 +37,7 @@ Node.js · TypeScript · discord.js v14 · PostgreSQL · Prisma ORM · node-cron
 
 ```
 src/
-├── commands/      # Slash commands (/profile_duolingo, /help)
+├── commands/      # Slash commands (/profile_duolingo, /ranking_global, /help)
 ├── config/        # Validação de env + intents do gateway
 ├── constants/     # Canais, regras do jogo, custom ids
 ├── data/          # questions.json + datasets do gerador
