@@ -4,46 +4,52 @@ import {
   Message,
   TextChannel,
 } from 'discord.js';
-import { User } from '@prisma/client';
 import { BRAND_COLOR, CHANNELS, RANKING_SIZE, RANK_LABELS } from '../constants';
+import { GuildScoreWithUser } from '../repositories';
 import { createLogger } from '../utils/logger';
 import { userService } from './user.service';
 
 const log = createLogger('RankingService');
 
 /** Marker placed in the embed footer to locate the bot's ranking message. */
-const RANKING_FOOTER_TAG = 'English Streak • Ranking Global';
-/** Accepted footer tags (incl. the legacy English one) for locating the message. */
-const RANKING_FOOTER_TAGS = [RANKING_FOOTER_TAG, 'English Streak • Global Ranking'];
+const RANKING_FOOTER_TAG = 'English Streak • Ranking do Servidor';
+/** Accepted footer tags (incl. legacy global ones) for locating the message. */
+const RANKING_FOOTER_TAGS = [
+  RANKING_FOOTER_TAG,
+  'English Streak • Ranking Global',
+  'English Streak • Global Ranking',
+];
 
 /**
- * Builds and maintains the global Top-5 leaderboard as a single permanent
+ * Builds and maintains the per-server Top-5 leaderboard as a single permanent
  * message in the ranking channel (refreshed on cron and after completions).
+ *
+ * The ranking channel belongs to one server, so the message only ever shows
+ * that server's players. The full cross-server ranking lives behind the
+ * `/ranking_global` command instead.
  */
 export class RankingService {
   /** Cached id of the auto-updated ranking message, to avoid re-scanning. */
   private rankingMessageId: string | null = null;
 
-  /** Builds the leaderboard embed (Top 5 + how-to-use) from the current top users. */
-  async buildEmbed(): Promise<EmbedBuilder> {
-    const top = await userService.getLeaderboard(RANKING_SIZE);
+  /** Builds the per-server leaderboard embed (Top 5 + how-to-use). */
+  async buildEmbed(guildId: string): Promise<EmbedBuilder> {
+    const top = await userService.getGuildLeaderboard(guildId, RANKING_SIZE);
 
     const embed = new EmbedBuilder()
       .setColor(BRAND_COLOR)
-      .setTitle('🏆 Ranking Global — Top 5')
+      .setTitle('🏆 Ranking do Servidor — Top 5')
       .setFooter({ text: RANKING_FOOTER_TAG });
 
     if (top.length === 0) {
       embed.setDescription(
-        'Ninguém jogou ainda. Seja o primeiro — comece o desafio no canal de perguntas! 🚀',
+        'Ninguém deste servidor jogou ainda. Seja o primeiro — comece o desafio no canal de perguntas! 🚀',
       );
       this.addUsageField(embed);
       return embed;
     }
 
-    embed.setDescription(
-      top.map((user, i) => this.formatRow(user, i)).join('\n\n'),
-    );
+    embed.setDescription(top.map((row, i) => this.formatRow(row, i)).join('\n\n'));
     this.addUsageField(embed);
     return embed;
   }
@@ -53,18 +59,19 @@ export class RankingService {
     embed.addFields({
       name: 'ℹ️ Como usar este canal',
       value: [
-        'Este Top 5 é atualizado automaticamente.',
+        'Este Top 5 é **deste servidor** e é atualizado automaticamente.',
+        '• `/ranking_global` — veja o ranking de **todos os servidores** (privado)',
         '• `/profile_duolingo` — veja suas estatísticas completas **e sua posição** (privado)',
-        '_A resposta é privada, então este canal fica sempre limpo._',
+        '_As respostas são privadas, então este canal fica sempre limpo._',
       ].join('\n'),
     });
   }
 
-  private formatRow(user: User, index: number): string {
+  private formatRow(row: GuildScoreWithUser, index: number): string {
     const label = RANK_LABELS[index] ?? `#${index + 1}`;
     return [
-      `${label}  **${this.escape(user.username)}**`,
-      `> 🏅 ${user.points} pts · 🔥 ${user.currentStreak} dia(s) de ofensiva · 🏆 recorde ${user.bestStreak}`,
+      `${label}  **${this.escape(row.username)}**`,
+      `> 🏅 ${row.points} pts · 🔥 ${row.user.currentStreak} dia(s) de ofensiva · 🏆 recorde ${row.user.bestStreak}`,
     ].join('\n');
   }
 
@@ -100,7 +107,8 @@ export class RankingService {
       return;
     }
 
-    const embed = await this.buildEmbed();
+    // The channel belongs to exactly one server: that's whose ranking we show.
+    const embed = await this.buildEmbed(channel.guildId);
 
     const existing = await this.findRankingMessage(channel, client);
     try {

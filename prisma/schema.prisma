@@ -34,11 +34,38 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  answers UserAnswer[]
+  answers     UserAnswer[]
+  guildScores GuildScore[]
 
   @@index([points])
   @@index([currentStreak])
   @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// GuildScore
+// Per-server score for a user. Points are attributed to the server the user
+// started the daily challenge from (session.guildId). This powers the
+// per-server leaderboard, while the global ranking still reads from User.
+// ---------------------------------------------------------------------------
+model GuildScore {
+  id       String @id @default(uuid())
+  guildId  String
+  userId   String
+  username String // denormalized for display without a join
+
+  points                 Int @default(0)
+  totalCorrectAnswers    Int @default(0)
+  totalQuestionsAnswered Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+  @@index([guildId, points])
+  @@map("guild_scores")
 }
 
 // ---------------------------------------------------------------------------

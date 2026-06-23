@@ -23,17 +23,33 @@ export const profileCommand: Command = {
       interaction.user.username,
     );
     const stats = userService.buildProfile(user);
+
     const { position, total } = await userService.getRank(user);
-    const rankValue =
+    const globalRankValue =
       stats.points > 0 ? `#${position} de ${total}` : 'Sem ranking';
+
+    // Position within this server (based on points earned playing from here).
+    // Only meaningful when invoked inside a guild.
+    let serverRankValue = 'Use o comando em um servidor';
+    if (interaction.guildId) {
+      const guildRank = await userService.getGuildRank(
+        interaction.guildId,
+        user.id,
+      );
+      serverRankValue =
+        guildRank.position > 0
+          ? `#${guildRank.position} de ${guildRank.total} · ${guildRank.points} pts`
+          : 'Sem ranking neste servidor';
+    }
 
     const embed = new EmbedBuilder()
       .setColor(BRAND_COLOR)
       .setTitle(`📊 Perfil — ${stats.username}`)
       .setThumbnail(interaction.user.displayAvatarURL())
       .addFields(
-        { name: '📍 Posição', value: rankValue, inline: true },
-        { name: '🏅 Pontos', value: `${stats.points}`, inline: true },
+        { name: '🏠 Posição no servidor', value: serverRankValue, inline: true },
+        { name: '🌍 Posição global', value: globalRankValue, inline: true },
+        { name: '🏅 Pontos (global)', value: `${stats.points}`, inline: true },
         { name: '🔥 Ofensiva atual', value: `${stats.currentStreak} dia(s)`, inline: true },
         { name: '🏆 Melhor ofensiva', value: `${stats.bestStreak} dia(s)`, inline: true },
         {
