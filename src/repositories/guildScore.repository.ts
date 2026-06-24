@@ -45,10 +45,10 @@ export class GuildScoreRepository {
     });
   }
 
-  /** Top scorers in a guild (with their user, for global streak display). */
+  /** Top scorers in a guild (points > 0; with their user for streak display). */
   findTop(guildId: string, limit: number): Promise<GuildScoreWithUser[]> {
     return prisma.guildScore.findMany({
-      where: { guildId },
+      where: { guildId, points: { gt: 0 } },
       orderBy: [{ points: 'desc' }, { updatedAt: 'asc' }],
       take: limit,
       include: { user: true },
@@ -62,9 +62,9 @@ export class GuildScoreRepository {
     });
   }
 
-  /** Number of scored players in a guild. */
+  /** Number of RANKED players in a guild — only those who scored (points > 0). */
   count(guildId: string): Promise<number> {
-    return prisma.guildScore.count({ where: { guildId } });
+    return prisma.guildScore.count({ where: { guildId, points: { gt: 0 } } });
   }
 
   /**

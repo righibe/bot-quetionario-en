@@ -28,17 +28,21 @@ export class UserRepository {
     return prisma.user.update({ where: { id }, data });
   }
 
-  /** Returns the top users ordered by points, then best streak. */
+  /** Returns the top SCORING users (points > 0), ordered by points then streak. */
   findTop(limit: number): Promise<User[]> {
     return prisma.user.findMany({
+      where: { points: { gt: 0 } },
       orderBy: [{ points: 'desc' }, { bestStreak: 'desc' }, { updatedAt: 'asc' }],
       take: limit,
     });
   }
 
-  /** Total number of registered users (for stats / ranking position). */
+  /**
+   * Number of RANKED users — only those who actually scored (points > 0). People
+   * who merely opened the bot but never completed a challenge are not counted.
+   */
   count(): Promise<number> {
-    return prisma.user.count();
+    return prisma.user.count({ where: { points: { gt: 0 } } });
   }
 
   /**
