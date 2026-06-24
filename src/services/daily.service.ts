@@ -4,11 +4,9 @@ import { AnswerOutcome, DailySession } from '../types';
 import { DAILY_QUESTION_COUNT } from '../constants';
 import { dateKey, toUtcDateOnly, diffInDays } from '../utils/date';
 import { createLogger } from '../utils/logger';
-import {
-  dailyQuestionRepository,
-  userAnswerRepository,
-} from '../repositories';
+import { dailyQuestionRepository } from '../repositories';
 import { validateMultipleChoice } from '../validators';
+import { apiClientService } from './apiClient.service';
 import { questionService } from './question.service';
 import { userService, DailyCompletionResult } from './user.service';
 
@@ -168,41 +166,68 @@ export class DailyService {
     }
   }
 
-  /** Persists answers, points and streak when a session completes. */
+  /**
+   * Finalizes a completed session. The bot no longer writes points/scores to the
+   * database — it reports the validated answers to the private events API (the
+   * single source of truth) and returns a deterministic preview for the summary.
+   */
   private async finalize(session: DailySession): Promise<DailyCompletionResult> {
     const user = await userService.findByDiscordId(session.discordId);
     if (!user) {
       throw new Error('User vanished mid-session.');
     }
 
-    // Defensive: ignore replays if the user somehow already completed today.
+    // Advisory guard only: `lastDailyCompleted` is now written asynchronously by
+    // the events worker, so this read can be stale and is NOT the real replay
+    // protection — the API's EventLog idempotency (per guild/user/question/day)
+    // is the authoritative dedup. This just avoids obvious same-process replays.
     if (this.hasCompletedToday(user)) {
       log.warn(`Duplicate completion ignored for ${session.discordId}.`);
-      return {
-        user,
-        pointsEarned: 0,
-        streak: {
-          currentStreak: user.currentStreak,
-          bestStreak: user.bestStreak,
-          isNewBest: false,
-          wasReset: false,
-        },
-      };
+      return userService.previewCompletion(user, 0);
     }
 
-    const rows = session.questions.map((q, i) => ({
-      userId: user.id,
-      questionId: q.id,
-      isCorrect: session.results[i] ?? false,
-    }));
-    await userAnswerRepository.createMany(rows);
+    // Report to the events API. Fire-and-forget: the user's summary must not wait
+    // on the network, and the API is idempotent so retries never double-count.
+    void this.reportToEventsApi(session, user);
 
-    return userService.applyDailyCompletion(
-      user,
-      session.correctCount,
-      session.questions.length,
-      session.guildId,
+    // Deterministic preview for the summary; the worker persists the same values.
+    return userService.previewCompletion(user, session.correctCount);
+  }
+
+  /**
+   * Sends one answer event per question plus a daily-completed event to the
+   * private events API. Best-effort (the client never throws); all points and
+   * scores are recalculated and stored server-side.
+   */
+  private async reportToEventsApi(session: DailySession, user: User): Promise<void> {
+    if (!session.guildId) {
+      log.warn(
+        `No guildId for ${session.discordId}'s completion — scores not reported ` +
+          '(the daily challenge should always start from a server channel).',
+      );
+      return;
+    }
+
+    const base = {
+      guildId: session.guildId,
+      userId: session.discordId,
+      username: user.username,
+      // Pin events to the session's UTC day so idempotency/streak are stable
+      // even if the request is processed across a midnight boundary.
+      dayKey: session.dateKey,
+    };
+
+    await Promise.all(
+      session.questions.map((q, i) =>
+        apiClientService.reportAnswer({
+          ...base,
+          questionId: q.id,
+          isCorrect: session.results[i] ?? false,
+        }),
+      ),
     );
+
+    await apiClientService.reportDailyCompleted(base);
   }
 
   /** Cancels / clears a user's session (used on errors or restart). */

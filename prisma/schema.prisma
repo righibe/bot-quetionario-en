@@ -104,3 +104,36 @@ model UserAnswer {
   @@index([answeredAt])
   @@map("user_answers")
 }
+
+// ---------------------------------------------------------------------------
+// EventLog
+// Audit + idempotency ledger for the private events API. Every event the API
+// accepts is recorded here BEFORE the worker mutates scores, so each event is
+// processed at most once (unique idempotencyKey) and there is a durable trail
+// of what changed and why. Written exclusively by the closed-source API worker;
+// the bot never writes here (it only owns the schema so `db push` creates it).
+// IDs here are the Discord ids carried in the event (not internal User.id).
+// ---------------------------------------------------------------------------
+model EventLog {
+  id             String  @id @default(uuid())
+  idempotencyKey String  @unique
+  eventType      String // 'answer' | 'daily_completed'
+  guildId        String
+  userId         String // Discord user id as received in the event
+  questionId     Int? // null for daily_completed events
+  isCorrect      Boolean?
+  pointsAwarded  Int     @default(0)
+  processed      Boolean @default(false)
+  error          String?
+  // JSON of the original queue job, so a reconciler can safely re-enqueue an
+  // event that got stuck unprocessed (transactional-outbox recovery).
+  payload        String?
+
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  @@index([guildId, userId])
+  @@index([eventType])
+  @@index([processed])
+  @@map("event_logs")
+}

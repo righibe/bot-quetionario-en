@@ -57,6 +57,19 @@ export const env = {
     dailyQuestions: optional('CHANNEL_DAILY_QUESTIONS'),
     ranking: optional('CHANNEL_RANKING'),
   },
+  /**
+   * Private events API. The bot NEVER writes scores to the DB directly anymore;
+   * it reports validated events to this closed-source API, which is the single
+   * source of truth for points. Both must be set for reporting to be enabled.
+   */
+  events: {
+    apiUrl: optional('EVENTS_API_URL'),
+    apiKey: optional('EVENTS_API_KEY'),
+    timeoutMs: Number(optional('EVENTS_API_TIMEOUT_MS', '4000')),
+    get enabled(): boolean {
+      return this.apiUrl !== '' && this.apiKey !== '';
+    },
+  },
   database: {
     url: buildDatabaseUrl(),
   },

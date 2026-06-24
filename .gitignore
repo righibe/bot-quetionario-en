@@ -19,3 +19,7 @@ prisma/*.db
 
 # Local tooling / editor agents
 .claude/
+
+# Closed-source private events API (must NEVER be committed to this public repo).
+# It lives here for local/VPS co-location but is deployed separately.
+/api/
