@@ -18,6 +18,7 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:backfill-guild-scores": "ts-node scripts/backfill-guild-scores.ts",
     "deploy:commands": "ts-node scripts/deploy-commands.ts"
   },
   "prisma": {

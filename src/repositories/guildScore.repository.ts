@@ -1,4 +1,4 @@
-import { GuildScore, Prisma, User } from '@prisma/client';
+import { GuildScore, User } from '@prisma/client';
 import { prisma } from '../database';
 
 /** A guild score row joined with its owning user (for streak/global stats). */
