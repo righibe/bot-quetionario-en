@@ -5,7 +5,6 @@ import {
   GuildScoreWithUser,
 } from '../repositories';
 import { POINTS_PER_CORRECT_ANSWER } from '../constants';
-import { toUtcDateOnly } from '../utils/date';
 import { streakService, StreakUpdate } from './streak.service';
 
 export interface ProfileStats {
@@ -60,16 +59,19 @@ export class UserService {
   }
 
   /**
-   * Finalizes a completed daily run: awards points, updates totals, advances the
-   * streak and records the completion day. Persisted in one update.
+   * Computes the result of a finished daily run for DISPLAY ONLY — it does NOT
+   * touch the database. Points and scores are now owned exclusively by the
+   * closed-source events API (the single source of truth): the bot reports the
+   * answers and the API recalculates/persists them. These numbers are
+   * deterministic (points = correct × 20; streak from the user's last
+   * completion), so the summary the user sees matches what the worker will
+   * persist a moment later.
    */
-  async applyDailyCompletion(
+  previewCompletion(
     user: User,
     correctCount: number,
-    totalQuestions: number,
-    guildId: string | null = null,
     now: Date = new Date(),
-  ): Promise<DailyCompletionResult> {
+  ): DailyCompletionResult {
     const pointsEarned = correctCount * POINTS_PER_CORRECT_ANSWER;
 
     const streak = streakService.computeOnCompletion(
@@ -79,26 +81,7 @@ export class UserService {
       now,
     );
 
-    const updated = await userRepository.update(user.id, {
-      points: { increment: pointsEarned },
-      totalCorrectAnswers: { increment: correctCount },
-      totalQuestionsAnswered: { increment: totalQuestions },
-      currentStreak: streak.currentStreak,
-      bestStreak: streak.bestStreak,
-      lastDailyCompleted: toUtcDateOnly(now),
-    });
-
-    // Attribute these points to the server the user played from, powering the
-    // per-server leaderboard. The global ranking still reads from User above.
-    if (guildId) {
-      await guildScoreRepository.increment(guildId, user.id, user.username, {
-        points: pointsEarned,
-        correct: correctCount,
-        answered: totalQuestions,
-      });
-    }
-
-    return { user: updated, pointsEarned, streak };
+    return { user, pointsEarned, streak };
   }
 
   /** Top N users for the GLOBAL leaderboard (across all servers). */

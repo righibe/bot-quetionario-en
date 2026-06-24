@@ -47,4 +47,7 @@ volumes:
 
 networks:
   english-streak:
+    # Fixed name so the closed-source events API (separate compose file in ./api)
+    # can attach to this same network as `external` and reach `postgres`.
+    name: english-streak
     driver: bridge

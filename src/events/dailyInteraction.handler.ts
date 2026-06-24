@@ -157,8 +157,22 @@ async function runCompletionSideEffects(
     }
   }
 
-  // Refresh the public ranking message.
+  // Refresh now, then again shortly after. Scores are written asynchronously by
+  // the events worker, so this user's just-reported points only land a few
+  // seconds later; the delayed refresh captures them without blocking.
   await refreshRanking(interaction.client);
+  scheduleDelayedRankingRefresh(interaction.client);
+}
+
+/** Milliseconds to wait before the follow-up ranking refresh. */
+const DELAYED_RANKING_REFRESH_MS = 6000;
+
+function scheduleDelayedRankingRefresh(client: Client): void {
+  const timer = setTimeout(() => {
+    void refreshRanking(client);
+  }, DELAYED_RANKING_REFRESH_MS);
+  // Don't keep the process alive just for this timer.
+  if (typeof timer.unref === 'function') timer.unref();
 }
 
 async function refreshRanking(client: Client): Promise<void> {
