@@ -11,25 +11,35 @@
  *   - future daily completions keep incrementing on top correctly.
  *
  * Caveat: it attributes every user's points to the SINGLE guild you pass in.
- * That's correct for a bot running in one server (one CHANNEL_RANKING). If the
- * bot truly spans multiple servers, only run it for the main one.
+ * That's correct for a bot running in one server (one CHANNEL_RANKING). Pass the
+ * guild id of the RANKING channel's server (the ranking reads by channel.guildId,
+ * which is not necessarily DISCORD_GUILD_ID). If the bot truly spans multiple
+ * servers, only run it for the main one.
+ *
+ * This file lives under src/ (not scripts/) on purpose: it is compiled into
+ * dist/ by the production build, so it can run inside the container with plain
+ * node — no ts-node needed.
  *
  * Usage:
- *   ts-node scripts/backfill-guild-scores.ts <guildId>
- *   # or, falling back to DISCORD_GUILD_ID from .env:
- *   ts-node scripts/backfill-guild-scores.ts
+ *   # production container (compiled):
+ *   node dist/scripts/backfill-guild-scores.js <guildId>
+ *   # local dev (ts-node):
+ *   yarn db:backfill-guild-scores <guildId>
+ *   # or, falling back to DISCORD_GUILD_ID from the environment:
+ *   node dist/scripts/backfill-guild-scores.js
  */
-import { prisma } from '../src/database';
-import { env } from '../src/config';
-import { logger } from '../src/utils/logger';
+import { prisma } from '../database';
+import { env } from '../config';
+import { logger } from '../utils/logger';
 
 async function main(): Promise<void> {
   const guildId = process.argv[2]?.trim() || env.discord.guildId;
 
   if (!guildId) {
     throw new Error(
-      'No guild id. Pass it as an argument (ts-node scripts/backfill-guild-scores.ts <guildId>) ' +
-        'or set DISCORD_GUILD_ID in your .env.',
+      'No guild id. Pass it as an argument ' +
+        '(node dist/scripts/backfill-guild-scores.js <guildId>) ' +
+        'or set DISCORD_GUILD_ID in the environment.',
     );
   }
 
